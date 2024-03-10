@@ -1,4 +1,5 @@
 """Support for Overkiz switches."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -15,9 +16,8 @@ from homeassistant.components.switch import (
     SwitchEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import EntityCategory, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import HomeAssistantOverkizData
@@ -25,18 +25,12 @@ from .const import DOMAIN
 from .entity import OverkizDescriptiveEntity
 
 
-@dataclass
-class OverkizSwitchDescriptionMixin:
-    """Define an entity description mixin for switch entities."""
+@dataclass(frozen=True, kw_only=True)
+class OverkizSwitchDescription(SwitchEntityDescription):
+    """Class to describe an Overkiz switch."""
 
     turn_on: str
     turn_off: str
-
-
-@dataclass
-class OverkizSwitchDescription(SwitchEntityDescription, OverkizSwitchDescriptionMixin):
-    """Class to describe an Overkiz switch."""
-
     is_on: Callable[[Callable[[str], OverkizStateType]], bool] | None = None
     turn_on_args: OverkizStateType | list[OverkizStateType] | None = None
     turn_off_args: OverkizStateType | list[OverkizStateType] | None = None
@@ -98,7 +92,7 @@ SWITCH_DESCRIPTIONS: list[OverkizSwitchDescription] = [
     ),
     OverkizSwitchDescription(
         key=UIWidget.MY_FOX_SECURITY_CAMERA,
-        name="Camera Shutter",
+        name="Camera shutter",
         turn_on=OverkizCommand.OPEN,
         turn_off=OverkizCommand.CLOSE,
         icon="mdi:camera-lock",

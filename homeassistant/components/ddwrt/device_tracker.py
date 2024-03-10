@@ -1,4 +1,5 @@
 """Support for DD-WRT routers."""
+
 from __future__ import annotations
 
 from http import HTTPStatus
@@ -46,7 +47,7 @@ PLATFORM_SCHEMA = PARENT_PLATFORM_SCHEMA.extend(
 )
 
 
-def get_scanner(hass: HomeAssistant, config: ConfigType) -> DeviceScanner | None:
+def get_scanner(hass: HomeAssistant, config: ConfigType) -> DdWrtDeviceScanner | None:
     """Validate the configuration and return a DD-WRT scanner."""
     try:
         return DdWrtDeviceScanner(config[DOMAIN])
@@ -55,7 +56,7 @@ def get_scanner(hass: HomeAssistant, config: ConfigType) -> DeviceScanner | None
 
 
 class DdWrtDeviceScanner(DeviceScanner):
-    """This class queries a wireless router running DD-WRT firmware."""
+    """Class which queries a wireless router running DD-WRT firmware."""
 
     def __init__(self, config):
         """Initialize the DD-WRT scanner."""

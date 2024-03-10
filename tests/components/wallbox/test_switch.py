@@ -1,42 +1,28 @@
 """Test Wallbox Lock component."""
+
 import json
 
 import pytest
 import requests_mock
 
 from homeassistant.components.switch import SERVICE_TURN_OFF, SERVICE_TURN_ON
-from homeassistant.components.wallbox import InvalidAuth
 from homeassistant.components.wallbox.const import CHARGER_STATUS_ID_KEY
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 
-from tests.components.wallbox import entry, setup_integration
-from tests.components.wallbox.const import (
-    ERROR,
-    JWT,
-    MOCK_SWITCH_ENTITY_ID,
-    STATUS,
-    TTL,
-    USER_ID,
-)
+from . import authorisation_response, setup_integration
+from .const import MOCK_SWITCH_ENTITY_ID
 
-authorisation_response = json.loads(
-    json.dumps(
-        {
-            JWT: "fakekeyhere",
-            USER_ID: 12345,
-            TTL: 145656758,
-            ERROR: "false",
-            STATUS: 200,
-        }
-    )
-)
+from tests.common import MockConfigEntry
 
 
-async def test_wallbox_switch_class(hass: HomeAssistant) -> None:
+async def test_wallbox_switch_class(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
     """Test wallbox switch class."""
 
-    await setup_integration(hass)
+    await setup_integration(hass, entry)
 
     state = hass.states.get(MOCK_SWITCH_ENTITY_ID)
     assert state
@@ -44,7 +30,7 @@ async def test_wallbox_switch_class(hass: HomeAssistant) -> None:
 
     with requests_mock.Mocker() as mock_request:
         mock_request.get(
-            "https://api.wall-box.com/auth/token/user",
+            "https://user-api.wall-box.com/users/signin",
             json=authorisation_response,
             status_code=200,
         )
@@ -75,14 +61,16 @@ async def test_wallbox_switch_class(hass: HomeAssistant) -> None:
     await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_wallbox_switch_class_connection_error(hass: HomeAssistant) -> None:
+async def test_wallbox_switch_class_connection_error(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
     """Test wallbox switch class connection error."""
 
-    await setup_integration(hass)
+    await setup_integration(hass, entry)
 
     with requests_mock.Mocker() as mock_request:
         mock_request.get(
-            "https://api.wall-box.com/auth/token/user",
+            "https://user-api.wall-box.com/users/signin",
             json=authorisation_response,
             status_code=200,
         )
@@ -114,14 +102,16 @@ async def test_wallbox_switch_class_connection_error(hass: HomeAssistant) -> Non
     await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_wallbox_switch_class_authentication_error(hass: HomeAssistant) -> None:
+async def test_wallbox_switch_class_authentication_error(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
     """Test wallbox switch class connection error."""
 
-    await setup_integration(hass)
+    await setup_integration(hass, entry)
 
     with requests_mock.Mocker() as mock_request:
         mock_request.get(
-            "https://api.wall-box.com/auth/token/user",
+            "https://user-api.wall-box.com/users/signin",
             json=authorisation_response,
             status_code=200,
         )
@@ -131,7 +121,7 @@ async def test_wallbox_switch_class_authentication_error(hass: HomeAssistant) ->
             status_code=403,
         )
 
-        with pytest.raises(InvalidAuth):
+        with pytest.raises(ConfigEntryAuthFailed):
             await hass.services.async_call(
                 "switch",
                 SERVICE_TURN_ON,
@@ -140,7 +130,7 @@ async def test_wallbox_switch_class_authentication_error(hass: HomeAssistant) ->
                 },
                 blocking=True,
             )
-        with pytest.raises(InvalidAuth):
+        with pytest.raises(ConfigEntryAuthFailed):
             await hass.services.async_call(
                 "switch",
                 SERVICE_TURN_OFF,

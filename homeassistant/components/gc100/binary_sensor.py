@@ -1,4 +1,5 @@
 """Support for binary sensor using GC100."""
+
 from __future__ import annotations
 
 import voluptuous as vol
@@ -59,7 +60,7 @@ class GC100BinarySensor(BinarySensorEntity):
         """Return the state of the entity."""
         return self._state
 
-    def update(self):
+    def update(self) -> None:
         """Update the sensor state."""
         self._gc100.read_sensor(self._port_addr, self.set_state)
 

@@ -1,4 +1,5 @@
 """Support for particulate matter sensors connected to a serial port."""
+
 from __future__ import annotations
 
 import logging
@@ -90,7 +91,7 @@ class ParticulateMatterSensor(SensorEntity):
         """Return the unit of measurement of this entity, if any."""
         return CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
 
-    def update(self):
+    def update(self) -> None:
         """Read from sensor and update the state."""
         _LOGGER.debug("Reading data from PM sensor")
         try:

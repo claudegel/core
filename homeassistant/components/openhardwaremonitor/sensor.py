@@ -1,4 +1,5 @@
 """Support for Open Hardware Monitor Sensor Platform."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -79,6 +80,8 @@ class OpenHardwareMonitorDevice(SensorEntity):
     @property
     def native_value(self):
         """Return the state of the device."""
+        if self.value == "-":
+            return None
         return self.value
 
     @property
@@ -91,7 +94,7 @@ class OpenHardwareMonitorDevice(SensorEntity):
         """In some locales a decimal numbers uses ',' instead of '.'."""
         return string.replace(",", ".")
 
-    def update(self):
+    def update(self) -> None:
         """Update the device from a new JSON object."""
         self._data.update()
 

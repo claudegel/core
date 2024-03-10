@@ -1,8 +1,9 @@
 """Configuration for HEOS tests."""
+
 from __future__ import annotations
 
 from collections.abc import Sequence
-from unittest.mock import Mock, patch as patch
+from unittest.mock import Mock, patch
 
 from pyheos import (
     Dispatcher,

@@ -1,17 +1,19 @@
 """Support for Pilight sensors."""
+
 from __future__ import annotations
 
 import logging
 
 import voluptuous as vol
 
-from homeassistant.components import pilight
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import CONF_NAME, CONF_PAYLOAD, CONF_UNIT_OF_MEASUREMENT
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+
+from .. import pilight
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,6 +53,8 @@ def setup_platform(
 class PilightSensor(SensorEntity):
     """Representation of a sensor that can be updated using Pilight."""
 
+    _attr_should_poll = False
+
     def __init__(self, hass, name, variable, payload, unit_of_measurement):
         """Initialize the sensor."""
         self._state = None
@@ -61,11 +65,6 @@ class PilightSensor(SensorEntity):
         self._unit_of_measurement = unit_of_measurement
 
         hass.bus.listen(pilight.EVENT, self._handle_code)
-
-    @property
-    def should_poll(self):
-        """No polling needed."""
-        return False
 
     @property
     def name(self):

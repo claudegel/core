@@ -1,11 +1,11 @@
 """Support for Worx Landroid mower."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
 
 import aiohttp
-import async_timeout
 import voluptuous as vol
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
@@ -89,16 +89,16 @@ class WorxLandroidSensor(SensorEntity):
             return PERCENTAGE
         return None
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Update the sensor data from the mower."""
         connection_error = False
 
         try:
             session = async_get_clientsession(self.hass)
-            async with async_timeout.timeout(self.timeout):
+            async with asyncio.timeout(self.timeout):
                 auth = aiohttp.helpers.BasicAuth("admin", self.pin)
                 mower_response = await session.get(self.url, auth=auth)
-        except (asyncio.TimeoutError, aiohttp.ClientError):
+        except (TimeoutError, aiohttp.ClientError):
             if self.allow_unreachable is False:
                 _LOGGER.error("Error connecting to mower at %s", self.url)
 
@@ -129,9 +129,8 @@ class WorxLandroidSensor(SensorEntity):
             elif self.sensor == "state":
                 self._state = self.get_state(data)
 
-        else:
-            if self.sensor == "error":
-                self._state = "no"
+        elif self.sensor == "error":
+            self._state = "no"
 
     @staticmethod
     def get_error(obj):

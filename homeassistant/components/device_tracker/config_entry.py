@@ -1,4 +1,5 @@
 """Code to set up a device tracker platform using a config entry."""
+
 from __future__ import annotations
 
 import asyncio
@@ -13,11 +14,13 @@ from homeassistant.const import (
     ATTR_LONGITUDE,
     STATE_HOME,
     STATE_NOT_HOME,
+    EntityCategory,
 )
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.entity import DeviceInfo, Entity, EntityCategory
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.entity_platform import EntityPlatform
 from homeassistant.helpers.typing import StateType
@@ -30,17 +33,23 @@ from .const import (
     CONNECTED_DEVICE_REGISTERED,
     DOMAIN,
     LOGGER,
+    SourceType,
 )
+
+# mypy: disallow-any-generics
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up an entry."""
-    component: EntityComponent | None = hass.data.get(DOMAIN)
+    component: EntityComponent[BaseTrackerEntity] | None = hass.data.get(DOMAIN)
 
     if component is not None:
         return await component.async_setup_entry(entry)
 
-    component = hass.data[DOMAIN] = EntityComponent(LOGGER, DOMAIN, hass)
+    component = hass.data[DOMAIN] = EntityComponent[BaseTrackerEntity](
+        LOGGER, DOMAIN, hass
+    )
+    component.register_shutdown()
 
     # Clean up old devices created by device tracker entities in the past.
     # Can be removed after 2022.6
@@ -69,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload an entry."""
-    component: EntityComponent = hass.data[DOMAIN]
+    component: EntityComponent[BaseTrackerEntity] = hass.data[DOMAIN]
     return await component.async_unload_entry(entry)
 
 
@@ -124,6 +133,7 @@ def _async_register_mac(
         device_entry = dev_reg.async_get(ev.data["device_id"])
 
         if device_entry is None:
+            # This should not happen, since the device was just created.
             return
 
         # Check if device has a mac
@@ -145,8 +155,7 @@ def _async_register_mac(
         if (entity_id := ent_reg.async_get_entity_id(DOMAIN, *unique_id)) is None:
             return
 
-        if (entity_entry := ent_reg.async_get(entity_id)) is None:
-            return
+        entity_entry = ent_reg.entities[entity_id]
 
         # Make sure entity has a config entry and was disabled by the
         # default disable logic in the integration and new entities
@@ -169,7 +178,9 @@ def _async_register_mac(
         # Enable entity
         ent_reg.async_update_entity(entity_id, disabled_by=None)
 
-    hass.bus.async_listen(dr.EVENT_DEVICE_REGISTRY_UPDATED, handle_device_event)
+    hass.bus.async_listen(
+        dr.EVENT_DEVICE_REGISTRY_UPDATED, handle_device_event, run_immediately=True
+    )
 
 
 class BaseTrackerEntity(Entity):
@@ -187,7 +198,7 @@ class BaseTrackerEntity(Entity):
         return None
 
     @property
-    def source_type(self) -> str:
+    def source_type(self) -> SourceType | str:
         """Return the source type, eg gps or router, of the device."""
         raise NotImplementedError
 
@@ -231,12 +242,12 @@ class TrackerEntity(BaseTrackerEntity):
     @property
     def latitude(self) -> float | None:
         """Return latitude value of the device."""
-        raise NotImplementedError
+        return None
 
     @property
     def longitude(self) -> float | None:
         """Return longitude value of the device."""
-        raise NotImplementedError
+        return None
 
     @property
     def state(self) -> str | None:
@@ -342,7 +353,7 @@ class ScannerEntity(BaseTrackerEntity):
                 self.mac_address,
                 self.unique_id,
             )
-            if self.is_connected:
+            if self.is_connected and self.ip_address:
                 _async_connected_device_registered(
                     hass,
                     self.mac_address,
@@ -356,7 +367,7 @@ class ScannerEntity(BaseTrackerEntity):
         assert self.mac_address is not None
 
         return dr.async_get(self.hass).async_get_device(
-            set(), {(dr.CONNECTION_NETWORK_MAC, self.mac_address)}
+            connections={(dr.CONNECTION_NETWORK_MAC, self.mac_address)}
         )
 
     async def async_internal_added_to_hass(self) -> None:
@@ -364,7 +375,6 @@ class ScannerEntity(BaseTrackerEntity):
         # Entities without a unique ID don't have a device
         if (
             not self.registry_entry
-            or not self.platform
             or not self.platform.config_entry
             or not self.mac_address
             or (device_entry := self.find_device_entry()) is None
@@ -397,13 +407,13 @@ class ScannerEntity(BaseTrackerEntity):
     @property
     def state_attributes(self) -> dict[str, StateType]:
         """Return the device state attributes."""
-        attr: dict[str, StateType] = {}
-        attr.update(super().state_attributes)
-        if self.ip_address is not None:
-            attr[ATTR_IP] = self.ip_address
-        if self.mac_address is not None:
-            attr[ATTR_MAC] = self.mac_address
-        if self.hostname is not None:
-            attr[ATTR_HOST_NAME] = self.hostname
+        attr = super().state_attributes
+
+        if ip_address := self.ip_address:
+            attr[ATTR_IP] = ip_address
+        if (mac_address := self.mac_address) is not None:
+            attr[ATTR_MAC] = mac_address
+        if (hostname := self.hostname) is not None:
+            attr[ATTR_HOST_NAME] = hostname
 
         return attr

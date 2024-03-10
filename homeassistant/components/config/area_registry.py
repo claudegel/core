@@ -1,12 +1,18 @@
 """HTTP views to interact with the area registry."""
+
+from __future__ import annotations
+
+from typing import Any
+
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
-from homeassistant.core import callback
-from homeassistant.helpers.area_registry import async_get
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.area_registry import AreaEntry, async_get
 
 
-async def async_setup(hass):
+@callback
+def async_setup(hass: HomeAssistant) -> bool:
     """Enable the Area Registry views."""
     websocket_api.async_register_command(hass, websocket_list_areas)
     websocket_api.async_register_command(hass, websocket_create_area)
@@ -17,7 +23,11 @@ async def async_setup(hass):
 
 @websocket_api.websocket_command({vol.Required("type"): "config/area_registry/list"})
 @callback
-def websocket_list_areas(hass, connection, msg):
+def websocket_list_areas(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
     """Handle list areas command."""
     registry = async_get(hass)
     connection.send_result(
@@ -29,19 +39,29 @@ def websocket_list_areas(hass, connection, msg):
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "config/area_registry/create",
+        vol.Optional("aliases"): list,
+        vol.Optional("icon"): str,
         vol.Required("name"): str,
         vol.Optional("picture"): vol.Any(str, None),
     }
 )
 @websocket_api.require_admin
 @callback
-def websocket_create_area(hass, connection, msg):
+def websocket_create_area(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
     """Create area command."""
     registry = async_get(hass)
 
     data = dict(msg)
     data.pop("type")
     data.pop("id")
+
+    if "aliases" in data:
+        # Convert aliases to a set
+        data["aliases"] = set(data["aliases"])
 
     try:
         entry = registry.async_create(**data)
@@ -59,7 +79,11 @@ def websocket_create_area(hass, connection, msg):
 )
 @websocket_api.require_admin
 @callback
-def websocket_delete_area(hass, connection, msg):
+def websocket_delete_area(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
     """Delete area command."""
     registry = async_get(hass)
 
@@ -74,20 +98,30 @@ def websocket_delete_area(hass, connection, msg):
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "config/area_registry/update",
+        vol.Optional("aliases"): list,
         vol.Required("area_id"): str,
+        vol.Optional("icon"): vol.Any(str, None),
         vol.Optional("name"): str,
         vol.Optional("picture"): vol.Any(str, None),
     }
 )
 @websocket_api.require_admin
 @callback
-def websocket_update_area(hass, connection, msg):
+def websocket_update_area(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
     """Handle update area websocket command."""
     registry = async_get(hass)
 
     data = dict(msg)
     data.pop("type")
     data.pop("id")
+
+    if "aliases" in data:
+        # Convert aliases to a set
+        data["aliases"] = set(data["aliases"])
 
     try:
         entry = registry.async_update(**data)
@@ -98,6 +132,12 @@ def websocket_update_area(hass, connection, msg):
 
 
 @callback
-def _entry_dict(entry):
+def _entry_dict(entry: AreaEntry) -> dict[str, Any]:
     """Convert entry to API format."""
-    return {"area_id": entry.id, "name": entry.name, "picture": entry.picture}
+    return {
+        "aliases": list(entry.aliases),
+        "area_id": entry.id,
+        "icon": entry.icon,
+        "name": entry.name,
+        "picture": entry.picture,
+    }

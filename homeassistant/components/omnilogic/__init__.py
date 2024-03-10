@@ -1,4 +1,5 @@
 """The Omnilogic integration."""
+
 import logging
 
 from omnilogic import LoginException, OmniLogic, OmniLogicException
@@ -61,7 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         OMNI_API: api,
     }
 
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 

@@ -1,8 +1,9 @@
 """Fixtures for P1 Monitor integration tests."""
+
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from p1monitor import Phases, Settings, SmartMeter
+from p1monitor import Phases, Settings, SmartMeter, WaterMeter
 import pytest
 
 from homeassistant.components.p1_monitor.const import DOMAIN
@@ -43,7 +44,12 @@ def mock_p1monitor():
                 json.loads(load_fixture("p1_monitor/settings.json"))
             )
         )
-        yield p1monitor_mock
+        client.watermeter = AsyncMock(
+            return_value=WaterMeter.from_dict(
+                json.loads(load_fixture("p1_monitor/watermeter.json"))
+            )
+        )
+        yield client
 
 
 @pytest.fixture

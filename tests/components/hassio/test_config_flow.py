@@ -1,10 +1,12 @@
 """Test the Home Assistant Supervisor config flow."""
+
 from unittest.mock import patch
 
 from homeassistant.components.hassio import DOMAIN
+from homeassistant.core import HomeAssistant
 
 
-async def test_config_flow(hass):
+async def test_config_flow(hass: HomeAssistant) -> None:
     """Test we get the form."""
 
     with patch(
@@ -25,7 +27,7 @@ async def test_config_flow(hass):
     assert len(mock_setup_entry.mock_calls) == 1
 
 
-async def test_multiple_entries(hass):
+async def test_multiple_entries(hass: HomeAssistant) -> None:
     """Test creating multiple hassio entries."""
     await test_config_flow(hass)
     result = await hass.config_entries.flow.async_init(

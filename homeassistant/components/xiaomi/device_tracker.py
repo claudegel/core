@@ -1,4 +1,5 @@
 """Support for Xiaomi Mi routers."""
+
 from __future__ import annotations
 
 from http import HTTPStatus
@@ -28,7 +29,7 @@ PLATFORM_SCHEMA = PARENT_PLATFORM_SCHEMA.extend(
 )
 
 
-def get_scanner(hass: HomeAssistant, config: ConfigType) -> DeviceScanner | None:
+def get_scanner(hass: HomeAssistant, config: ConfigType) -> XiaomiDeviceScanner | None:
     """Validate the configuration and return a Xiaomi Device Scanner."""
     scanner = XiaomiDeviceScanner(config[DOMAIN])
 
@@ -36,7 +37,7 @@ def get_scanner(hass: HomeAssistant, config: ConfigType) -> DeviceScanner | None
 
 
 class XiaomiDeviceScanner(DeviceScanner):
-    """This class queries a Xiaomi Mi router.
+    """Class which queries a Xiaomi Mi router.
 
     Adapted from Luci scanner.
     """

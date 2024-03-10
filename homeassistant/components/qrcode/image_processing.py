@@ -1,4 +1,5 @@
 """Support for the QR code image processing."""
+
 from __future__ import annotations
 
 import io
@@ -20,7 +21,6 @@ def setup_platform(
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
     """Set up the QR code image processing platform."""
-    # pylint: disable=unused-argument
     entities = []
     for camera in config[CONF_SOURCE]:
         entities.append(QrEntity(camera[CONF_ENTITY_ID], camera.get(CONF_NAME)))

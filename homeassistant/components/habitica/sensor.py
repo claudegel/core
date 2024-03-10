@@ -1,4 +1,5 @@
 """Support for Habitica sensors."""
+
 from __future__ import annotations
 
 from collections import namedtuple
@@ -24,7 +25,7 @@ MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=15)
 SensorType = namedtuple("SensorType", ["name", "icon", "unit", "path"])
 
 SENSORS_TYPES = {
-    "name": SensorType("Name", None, "", ["profile", "name"]),
+    "name": SensorType("Name", None, None, ["profile", "name"]),
     "hp": SensorType("HP", "mdi:heart", "HP", ["stats", "hp"]),
     "maxHealth": SensorType("max HP", "mdi:heart", "HP", ["stats", "maxHealth"]),
     "mp": SensorType("Mana", "mdi:auto-fix", "MP", ["stats", "mp"]),
@@ -35,7 +36,7 @@ SENSORS_TYPES = {
         "Lvl", "mdi:arrow-up-bold-circle-outline", "Lvl", ["stats", "lvl"]
     ),
     "gp": SensorType("Gold", "mdi:circle-multiple", "Gold", ["stats", "gp"]),
-    "class": SensorType("Class", "mdi:sword", "", ["stats", "class"]),
+    "class": SensorType("Class", "mdi:sword", None, ["stats", "class"]),
 }
 
 TASKS_TYPES = {
@@ -114,8 +115,10 @@ class HabitipyData:
         except ClientResponseError as error:
             if error.status == HTTPStatus.TOO_MANY_REQUESTS:
                 _LOGGER.warning(
-                    "Sensor data update for %s has too many API requests;"
-                    " Skipping the update",
+                    (
+                        "Sensor data update for %s has too many API requests;"
+                        " Skipping the update"
+                    ),
                     DOMAIN,
                 )
             else:
@@ -131,8 +134,10 @@ class HabitipyData:
             except ClientResponseError as error:
                 if error.status == HTTPStatus.TOO_MANY_REQUESTS:
                     _LOGGER.warning(
-                        "Sensor data update for %s has too many API requests;"
-                        " Skipping the update",
+                        (
+                            "Sensor data update for %s has too many API requests;"
+                            " Skipping the update"
+                        ),
                         DOMAIN,
                     )
                 else:
@@ -154,7 +159,7 @@ class HabitipySensor(SensorEntity):
         self._state = None
         self._updater = updater
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Update Condition and Forecast."""
         await self._updater.update()
         data = self._updater.data
@@ -194,7 +199,7 @@ class HabitipyTaskSensor(SensorEntity):
         self._state = None
         self._updater = updater
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Update Condition and Forecast."""
         await self._updater.update()
         all_tasks = self._updater.tasks

@@ -1,4 +1,5 @@
 """Test the flume config flow."""
+
 from unittest.mock import MagicMock, patch
 
 import requests.exceptions
@@ -11,6 +12,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_USERNAME,
 )
+from homeassistant.core import HomeAssistant
 
 from tests.common import MockConfigEntry
 
@@ -21,7 +23,7 @@ def _get_mocked_flume_device_list():
     return flume_device_list_mock
 
 
-async def test_form(hass):
+async def test_form(hass: HomeAssistant) -> None:
     """Test we get the form and can setup from user input."""
 
     result = await hass.config_entries.flow.async_init(
@@ -64,7 +66,7 @@ async def test_form(hass):
     assert len(mock_setup_entry.mock_calls) == 1
 
 
-async def test_form_invalid_auth(hass):
+async def test_form_invalid_auth(hass: HomeAssistant) -> None:
     """Test we handle invalid auth."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -91,7 +93,7 @@ async def test_form_invalid_auth(hass):
     assert result2["errors"] == {"password": "invalid_auth"}
 
 
-async def test_form_cannot_connect(hass):
+async def test_form_cannot_connect(hass: HomeAssistant) -> None:
     """Test we handle cannot connect error."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -117,7 +119,7 @@ async def test_form_cannot_connect(hass):
     assert result2["errors"] == {"base": "cannot_connect"}
 
 
-async def test_reauth(hass):
+async def test_reauth(hass: HomeAssistant) -> None:
     """Test we can reauth."""
     entry = MockConfigEntry(
         domain=DOMAIN,

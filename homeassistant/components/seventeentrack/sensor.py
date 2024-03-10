@@ -1,4 +1,5 @@
 """Support for package tracking sensors from 17track.net."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -11,7 +12,6 @@ import voluptuous as vol
 from homeassistant.components import persistent_notification
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import (
-    ATTR_ATTRIBUTION,
     ATTR_FRIENDLY_NAME,
     ATTR_LOCATION,
     CONF_PASSWORD,
@@ -19,7 +19,12 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import aiohttp_client, config_validation as cv
+from homeassistant.helpers import (
+    aiohttp_client,
+    config_validation as cv,
+    entity,
+    entity_registry as er,
+)
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -108,12 +113,13 @@ async def async_setup_platform(
 class SeventeenTrackSummarySensor(SensorEntity):
     """Define a summary sensor."""
 
+    _attr_attribution = ATTRIBUTION
     _attr_icon = "mdi:package"
     _attr_native_unit_of_measurement = "packages"
 
     def __init__(self, data, status, initial_state):
         """Initialize."""
-        self._attr_extra_state_attributes = {ATTR_ATTRIBUTION: ATTRIBUTION}
+        self._attr_extra_state_attributes = {}
         self._data = data
         self._state = initial_state
         self._status = status
@@ -130,7 +136,7 @@ class SeventeenTrackSummarySensor(SensorEntity):
         """Return the state."""
         return self._state
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Update the sensor."""
         await self._data.async_update()
 
@@ -160,12 +166,12 @@ class SeventeenTrackSummarySensor(SensorEntity):
 class SeventeenTrackPackageSensor(SensorEntity):
     """Define an individual package sensor."""
 
+    _attr_attribution = ATTRIBUTION
     _attr_icon = "mdi:package"
 
     def __init__(self, data, package):
         """Initialize."""
         self._attr_extra_state_attributes = {
-            ATTR_ATTRIBUTION: ATTRIBUTION,
             ATTR_DESTINATION_COUNTRY: package.destination_country,
             ATTR_INFO_TEXT: package.info_text,
             ATTR_TIMESTAMP: package.timestamp,
@@ -185,7 +191,7 @@ class SeventeenTrackPackageSensor(SensorEntity):
         )
 
     @property
-    def available(self):
+    def available(self) -> bool:
         """Return whether the entity is available."""
         return self._data.packages.get(self._tracking_number) is not None
 
@@ -201,7 +207,7 @@ class SeventeenTrackPackageSensor(SensorEntity):
         """Return the state."""
         return self._state
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Update the sensor."""
         await self._data.async_update()
 
@@ -234,7 +240,7 @@ class SeventeenTrackPackageSensor(SensorEntity):
         """Remove entity itself."""
         await self.async_remove(force_remove=True)
 
-        reg = await self.hass.helpers.entity_registry.async_get_registry()
+        reg = er.async_get(self.hass)
         entity_id = reg.async_get_entity_id(
             "sensor",
             "seventeentrack",
@@ -289,6 +295,7 @@ class SeventeenTrackData:
 
     async def _async_update(self):
         """Get updated data from 17track.net."""
+        entities: list[entity.Entity] = []
 
         try:
             packages = await self._client.profile.packages(
@@ -302,12 +309,9 @@ class SeventeenTrackData:
 
             _LOGGER.debug("Will add new tracking numbers: %s", to_add)
             if to_add:
-                self._async_add_entities(
-                    [
-                        SeventeenTrackPackageSensor(self, new_packages[tracking_number])
-                        for tracking_number in to_add
-                    ],
-                    True,
+                entities.extend(
+                    SeventeenTrackPackageSensor(self, new_packages[tracking_number])
+                    for tracking_number in to_add
                 )
 
             self.packages = new_packages
@@ -323,15 +327,13 @@ class SeventeenTrackData:
             # creating summary sensors on first update
             if self.first_update:
                 self.first_update = False
-
-                self._async_add_entities(
-                    [
-                        SeventeenTrackSummarySensor(self, status, quantity)
-                        for status, quantity in self.summary.items()
-                    ],
-                    True,
+                entities.extend(
+                    SeventeenTrackSummarySensor(self, status, quantity)
+                    for status, quantity in self.summary.items()
                 )
 
         except SeventeenTrackError as err:
             _LOGGER.error("There was an error retrieving the summary: %s", err)
             self.summary = {}
+
+        self._async_add_entities(entities, True)

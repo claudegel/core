@@ -3,6 +3,7 @@
 All containing methods are legacy helpers that should not be used by new
 components. Instead call the service directly.
 """
+
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_BRIGHTNESS_PCT,
@@ -18,7 +19,6 @@ from homeassistant.components.light import (
     ATTR_RGBWW_COLOR,
     ATTR_TRANSITION,
     ATTR_WHITE,
-    ATTR_WHITE_VALUE,
     ATTR_XY_COLOR,
     DOMAIN,
 )
@@ -46,7 +46,6 @@ def turn_on(
     hs_color=None,
     color_temp=None,
     kelvin=None,
-    white_value=None,
     profile=None,
     flash=None,
     effect=None,
@@ -68,7 +67,6 @@ def turn_on(
         hs_color,
         color_temp,
         kelvin,
-        white_value,
         profile,
         flash,
         effect,
@@ -90,7 +88,6 @@ async def async_turn_on(
     hs_color=None,
     color_temp=None,
     kelvin=None,
-    white_value=None,
     profile=None,
     flash=None,
     effect=None,
@@ -113,7 +110,6 @@ async def async_turn_on(
             (ATTR_HS_COLOR, hs_color),
             (ATTR_COLOR_TEMP, color_temp),
             (ATTR_KELVIN, kelvin),
-            (ATTR_WHITE_VALUE, white_value),
             (ATTR_FLASH, flash),
             (ATTR_EFFECT, effect),
             (ATTR_COLOR_NAME, color_name),
@@ -158,7 +154,6 @@ def toggle(
     hs_color=None,
     color_temp=None,
     kelvin=None,
-    white_value=None,
     profile=None,
     flash=None,
     effect=None,
@@ -177,7 +172,6 @@ def toggle(
         hs_color,
         color_temp,
         kelvin,
-        white_value,
         profile,
         flash,
         effect,
@@ -196,7 +190,6 @@ async def async_toggle(
     hs_color=None,
     color_temp=None,
     kelvin=None,
-    white_value=None,
     profile=None,
     flash=None,
     effect=None,
@@ -216,7 +209,6 @@ async def async_toggle(
             (ATTR_HS_COLOR, hs_color),
             (ATTR_COLOR_TEMP, color_temp),
             (ATTR_KELVIN, kelvin),
-            (ATTR_WHITE_VALUE, white_value),
             (ATTR_FLASH, flash),
             (ATTR_EFFECT, effect),
             (ATTR_COLOR_NAME, color_name),

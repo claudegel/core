@@ -1,4 +1,5 @@
 """Adds config flow for dnsip integration."""
+
 from __future__ import annotations
 
 import asyncio
@@ -9,16 +10,21 @@ import aiodns
 from aiodns.error import DNSError
 import voluptuous as vol
 
-from homeassistant import config_entries
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
 from .const import (
     CONF_HOSTNAME,
     CONF_IPV4,
     CONF_IPV6,
+    CONF_IPV6_V4,
     CONF_RESOLVER,
     CONF_RESOLVER_IPV6,
     DEFAULT_HOSTNAME,
@@ -61,15 +67,17 @@ async def async_validate_hostname(
     tasks = await asyncio.gather(
         async_check(hostname, resolver_ipv4, "A"),
         async_check(hostname, resolver_ipv6, "AAAA"),
+        async_check(hostname, resolver_ipv4, "AAAA"),
     )
 
     result[CONF_IPV4] = tasks[0]
     result[CONF_IPV6] = tasks[1]
+    result[CONF_IPV6_V4] = tasks[2]
 
     return result
 
 
-class DnsIPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class DnsIPConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for dnsip integration."""
 
     VERSION = 1
@@ -77,20 +85,19 @@ class DnsIPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
+        config_entry: ConfigEntry,
     ) -> DnsIPOptionsFlowHandler:
         """Return Option handler."""
         return DnsIPOptionsFlowHandler(config_entry)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the initial step."""
 
         errors = {}
 
         if user_input:
-
             hostname = user_input[CONF_HOSTNAME]
             name = DEFAULT_NAME if hostname == DEFAULT_HOSTNAME else hostname
             resolver = user_input.get(CONF_RESOLVER, DEFAULT_RESOLVER)
@@ -98,7 +105,15 @@ class DnsIPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             validate = await async_validate_hostname(hostname, resolver, resolver_ipv6)
 
-            if not validate[CONF_IPV4] and not validate[CONF_IPV6]:
+            set_resolver = resolver
+            if validate[CONF_IPV6]:
+                set_resolver = resolver_ipv6
+
+            if (
+                not validate[CONF_IPV4]
+                and not validate[CONF_IPV6]
+                and not validate[CONF_IPV6_V4]
+            ):
                 errors["base"] = "invalid_hostname"
             else:
                 await self.async_set_unique_id(hostname)
@@ -110,11 +125,11 @@ class DnsIPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_HOSTNAME: hostname,
                         CONF_NAME: name,
                         CONF_IPV4: validate[CONF_IPV4],
-                        CONF_IPV6: validate[CONF_IPV6],
+                        CONF_IPV6: validate[CONF_IPV6] or validate[CONF_IPV6_V4],
                     },
                     options={
                         CONF_RESOLVER: resolver,
-                        CONF_RESOLVER_IPV6: resolver_ipv6,
+                        CONF_RESOLVER_IPV6: set_resolver,
                     },
                 )
 
@@ -131,16 +146,16 @@ class DnsIPConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-class DnsIPOptionsFlowHandler(config_entries.OptionsFlow):
+class DnsIPOptionsFlowHandler(OptionsFlow):
     """Handle a option config flow for dnsip integration."""
 
-    def __init__(self, entry: config_entries.ConfigEntry) -> None:
+    def __init__(self, entry: ConfigEntry) -> None:
         """Initialize options flow."""
         self.entry = entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Manage the options."""
         errors = {}
         if user_input is not None:

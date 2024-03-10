@@ -1,4 +1,5 @@
 """Support for switches that can be controlled using the RaspyRFM rc module."""
+
 from __future__ import annotations
 
 from raspyrfm_client import RaspyRFMClient
@@ -96,7 +97,9 @@ def setup_platform(
 class RaspyRFMSwitch(SwitchEntity):
     """Representation of a RaspyRFM switch."""
 
-    def __init__(self, raspyrfm_client, name: str, gateway, controlunit):
+    _attr_should_poll = False
+
+    def __init__(self, raspyrfm_client, name: str, gateway, controlunit) -> None:
         """Initialize the switch."""
         self._raspyrfm_client = raspyrfm_client
 
@@ -112,13 +115,8 @@ class RaspyRFMSwitch(SwitchEntity):
         return self._name
 
     @property
-    def should_poll(self):
-        """Return True if polling should be used."""
-        return False
-
-    @property
     def assumed_state(self):
-        """Return True when the current state can not be queried."""
+        """Return True when the current state cannot be queried."""
         return True
 
     @property

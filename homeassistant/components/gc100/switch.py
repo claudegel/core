@@ -1,5 +1,8 @@
 """Support for switches using GC100."""
+
 from __future__ import annotations
+
+from typing import Any
 
 import voluptuous as vol
 
@@ -54,15 +57,15 @@ class GC100Switch(SwitchEntity):
         """Return the state of the entity."""
         return self._state
 
-    def turn_on(self, **kwargs):
+    def turn_on(self, **kwargs: Any) -> None:
         """Turn the device on."""
         self._gc100.write_switch(self._port_addr, 1, self.set_state)
 
-    def turn_off(self, **kwargs):
+    def turn_off(self, **kwargs: Any) -> None:
         """Turn the device off."""
         self._gc100.write_switch(self._port_addr, 0, self.set_state)
 
-    def update(self):
+    def update(self) -> None:
         """Update the sensor state."""
         self._gc100.read_sensor(self._port_addr, self.set_state)
 

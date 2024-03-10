@@ -1,4 +1,5 @@
 """Support for information from HP iLO sensors."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -157,7 +158,7 @@ class HpIloSensor(SensorEntity):
         """Return the device state attributes."""
         return self._state_attributes
 
-    def update(self):
+    def update(self) -> None:
         """Get the latest data from HP iLO and updates the states."""
         # Call the API for new data. Each sensor will re-trigger this
         # same exact call, but that's fine. Results should be cached for

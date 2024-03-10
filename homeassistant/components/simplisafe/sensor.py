@@ -1,4 +1,5 @@
 """Support for SimpliSafe freeze sensor."""
+
 from __future__ import annotations
 
 from simplipy.device import DeviceTypes
@@ -11,7 +12,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import TEMP_FAHRENHEIT
+from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -42,7 +43,7 @@ class SimplisafeFreezeSensor(SimpliSafeEntity, SensorEntity):
     """Define a SimpliSafe freeze sensor entity."""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
-    _attr_native_unit_of_measurement = TEMP_FAHRENHEIT
+    _attr_native_unit_of_measurement = UnitOfTemperature.FAHRENHEIT
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(

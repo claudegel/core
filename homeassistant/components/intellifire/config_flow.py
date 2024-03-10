@@ -1,24 +1,22 @@
 """Config flow for IntelliFire integration."""
+
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
 from aiohttp import ClientConnectionError
-from intellifire4py import (
-    AsyncUDPFireplaceFinder,
-    IntellifireAsync,
-    IntellifireControlAsync,
-)
+from intellifire4py import AsyncUDPFireplaceFinder
 from intellifire4py.exceptions import LoginException
+from intellifire4py.intellifire import IntellifireAPICloud, IntellifireAPILocal
 import voluptuous as vol
 
-from homeassistant import config_entries
 from homeassistant.components.dhcp import DhcpServiceInfo
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
-from homeassistant.data_entry_flow import FlowResult
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.const import CONF_API_KEY, CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 
-from .const import DOMAIN, LOGGER
+from .const import CONF_USER_ID, DOMAIN, LOGGER
 
 STEP_USER_DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 
@@ -33,25 +31,27 @@ class DiscoveredHostInfo:
     serial: str | None
 
 
-async def validate_host_input(host: str) -> str:
+async def validate_host_input(host: str, dhcp_mode: bool = False) -> str:
     """Validate the user input allows us to connect.
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
-    api = IntellifireAsync(host)
-    await api.poll()
+    LOGGER.debug("Instantiating IntellifireAPI with host: [%s]", host)
+    api = IntellifireAPILocal(fireplace_ip=host)
+    await api.poll(suppress_warnings=dhcp_mode)
     serial = api.data.serial
+
     LOGGER.debug("Found a fireplace: %s", serial)
     # Return the serial number which will be used to calculate a unique ID for the device/sensors
     return serial
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class IntelliFireConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for IntelliFire."""
 
     VERSION = 1
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the Config Flow Handler."""
         self._host: str = ""
         self._serial: str = ""
@@ -62,7 +62,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _find_fireplaces(self):
         """Perform UDP discovery."""
         fireplace_finder = AsyncUDPFireplaceFinder()
-        discovered_hosts = await fireplace_finder.search_fireplace(timeout=1)
+        discovered_hosts = await fireplace_finder.search_fireplace(timeout=12)
         configured_hosts = {
             entry.data[CONF_HOST]
             for entry in self._async_current_entries(include_ignore=False)
@@ -82,17 +82,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, *, host: str, username: str, password: str, serial: str
     ):
         """Validate username/password against api."""
-        ift_control = IntellifireControlAsync(fireplace_ip=host)
-
         LOGGER.debug("Attempting login to iftapi with: %s", username)
-        # This can throw an error which will be handled above
-        try:
-            await ift_control.login(username=username, password=password)
-            await ift_control.get_username()
-        finally:
-            await ift_control.close()
 
-        data = {CONF_HOST: host, CONF_PASSWORD: password, CONF_USERNAME: username}
+        ift_cloud = IntellifireAPICloud()
+        await ift_cloud.login(username=username, password=password)
+        api_key = ift_cloud.get_fireplace_api_key()
+        user_id = ift_cloud.get_user_id()
+
+        data = {
+            CONF_HOST: host,
+            CONF_PASSWORD: password,
+            CONF_USERNAME: username,
+            CONF_API_KEY: api_key,
+            CONF_USER_ID: user_id,
+        }
 
         # Update or Create
         existing_entry = await self.async_set_unique_id(serial)
@@ -104,7 +107,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_api_config(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Configure API access."""
 
         errors = {}
@@ -116,7 +119,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
         if user_input is not None:
-
             control_schema = vol.Schema(
                 {
                     vol.Required(
@@ -149,7 +151,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="api_config", errors=errors, data_schema=control_schema
         )
 
-    async def _async_validate_ip_and_continue(self, host: str) -> FlowResult:
+    async def _async_validate_ip_and_continue(self, host: str) -> ConfigFlowResult:
         """Validate local config and continue."""
         self._async_abort_entries_match({CONF_HOST: host})
         self._serial = await validate_host_input(host)
@@ -179,7 +181,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_pick_device(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Pick which device to configure."""
         errors = {}
         LOGGER.debug("STEP: pick_device")
@@ -208,7 +210,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Start the user flow."""
 
         # Launch fireplaces discovery
@@ -220,10 +222,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         LOGGER.debug("Running Step: manual_device_entry")
         return await self.async_step_manual_device_entry()
 
-    async def async_step_reauth(self, user_input=None):
+    async def async_step_reauth(
+        self, entry_data: Mapping[str, Any]
+    ) -> ConfigFlowResult:
         """Perform reauth upon an API authentication error."""
         LOGGER.debug("STEP: reauth")
         entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+        assert entry
+        assert entry.unique_id
 
         # populate the expected vars
         self._serial = entry.unique_id
@@ -233,17 +239,22 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.context["title_placeholders"] = placeholders
         return await self.async_step_api_config()
 
-    async def async_step_dhcp(self, discovery_info: DhcpServiceInfo) -> FlowResult:
+    async def async_step_dhcp(
+        self, discovery_info: DhcpServiceInfo
+    ) -> ConfigFlowResult:
         """Handle DHCP Discovery."""
 
-        LOGGER.debug("STEP: dhcp")
         # Run validation logic on ip
         host = discovery_info.ip
+        LOGGER.debug("STEP: dhcp for host %s", host)
 
         self._async_abort_entries_match({CONF_HOST: host})
         try:
-            self._serial = await validate_host_input(host)
+            self._serial = await validate_host_input(host, dhcp_mode=True)
         except (ConnectionError, ClientConnectionError):
+            LOGGER.debug(
+                "DHCP Discovery has determined %s is not an IntelliFire device", host
+            )
             return self.async_abort(reason="not_intellifire_device")
 
         await self.async_set_unique_id(self._serial)

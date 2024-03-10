@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 from homeassistant.components.kaleidescape.const import DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 
 from . import MOCK_SERIAL
 
@@ -46,11 +47,11 @@ async def test_config_entry_not_ready(
 
 async def test_device(
     hass: HomeAssistant,
+    device_registry: dr.DeviceRegistry,
     mock_device: AsyncMock,
     mock_integration: MockConfigEntry,
 ) -> None:
     """Test device."""
-    device_registry = await hass.helpers.device_registry.async_get_registry()
     device = device_registry.async_get_device(
         identifiers={("kaleidescape", MOCK_SERIAL)}
     )

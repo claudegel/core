@@ -1,4 +1,5 @@
 """Support for Azure DevOps."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,8 +16,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.device_registry import DeviceEntryType
-from homeassistant.helpers.entity import DeviceInfo, EntityDescription
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -32,7 +33,7 @@ PLATFORMS = [Platform.SENSOR]
 BUILDS_QUERY: Final = "?queryOrder=queueTimeDescending&maxBuildsPerDefinition=1"
 
 
-@dataclass
+@dataclass(frozen=True)
 class AzureDevOpsEntityDescription(EntityDescription):
     """Class describing Azure DevOps entities."""
 
@@ -48,7 +49,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await client.authorize(entry.data[CONF_PAT], entry.data[CONF_ORG])
         if not client.authorized:
             raise ConfigEntryAuthFailed(
-                "Could not authorize with Azure DevOps. You will need to update your token"
+                "Could not authorize with Azure DevOps. You will need to update your"
+                " token"
             )
 
     project = await client.get_project(
@@ -65,7 +67,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 entry.data[CONF_PROJECT],
                 BUILDS_QUERY,
             )
-        except (aiohttp.ClientError, aiohttp.ClientError) as exception:
+        except aiohttp.ClientError as exception:
             raise UpdateFailed from exception
 
     coordinator = DataUpdateCoordinator(
@@ -81,7 +83,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator, project
 
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
@@ -96,6 +98,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 class AzureDevOpsEntity(CoordinatorEntity[DataUpdateCoordinator[list[DevOpsBuild]]]):
     """Defines a base Azure DevOps entity."""
+
+    _attr_has_entity_name = True
 
     entity_description: AzureDevOpsEntityDescription
 

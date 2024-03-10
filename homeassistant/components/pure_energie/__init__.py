@@ -1,4 +1,5 @@
 """The Pure Energie integration."""
+
 from __future__ import annotations
 
 from typing import NamedTuple
@@ -29,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
@@ -47,7 +48,7 @@ class PureEnergieData(NamedTuple):
     smartbridge: SmartBridge
 
 
-class PureEnergieDataUpdateCoordinator(DataUpdateCoordinator[PureEnergieData]):
+class PureEnergieDataUpdateCoordinator(DataUpdateCoordinator[PureEnergieData]):  # pylint: disable=hass-enforce-coordinator-module
     """Class to manage fetching Pure Energie data from single eindpoint."""
 
     config_entry: ConfigEntry

@@ -1,4 +1,5 @@
 """The Monoprice 6-Zone Amplifier integration."""
+
 import logging
 
 from pymonoprice import get_monoprice
@@ -48,7 +49,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         FIRST_RUN: first_run,
     }
 
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 

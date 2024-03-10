@@ -1,4 +1,5 @@
 """Diagnostics support for 1-Wire."""
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -19,7 +20,7 @@ async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
-    onewirehub: OneWireHub = hass.data[DOMAIN][entry.entry_id]
+    onewire_hub: OneWireHub = hass.data[DOMAIN][entry.entry_id]
 
     return {
         "entry": {
@@ -27,7 +28,7 @@ async def async_get_config_entry_diagnostics(
             "data": async_redact_data(entry.data, TO_REDACT),
             "options": {**entry.options},
         },
-        "devices": [asdict(device_details) for device_details in onewirehub.devices]
-        if onewirehub.devices
+        "devices": [asdict(device_details) for device_details in onewire_hub.devices]
+        if onewire_hub.devices
         else [],
     }

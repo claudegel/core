@@ -1,10 +1,10 @@
 """Component that will help set the Dlib face detect processing."""
+
 from __future__ import annotations
 
 import io
 import logging
 
-# pylint: disable=import-error
 import face_recognition
 import voluptuous as vol
 

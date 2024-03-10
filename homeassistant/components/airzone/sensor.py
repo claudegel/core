@@ -1,9 +1,18 @@
 """Support for the Airzone sensors."""
+
 from __future__ import annotations
 
 from typing import Any, Final
 
-from aioairzone.const import AZD_HUMIDITY, AZD_NAME, AZD_TEMP, AZD_TEMP_UNIT, AZD_ZONES
+from aioairzone.const import (
+    AZD_HOT_WATER,
+    AZD_HUMIDITY,
+    AZD_TEMP,
+    AZD_TEMP_UNIT,
+    AZD_WEBSERVER,
+    AZD_WIFI_RSSI,
+    AZD_ZONES,
+)
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -12,26 +21,55 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, TEMP_CELSIUS
-from homeassistant.core import HomeAssistant
+from homeassistant.const import (
+    PERCENTAGE,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+    EntityCategory,
+    UnitOfTemperature,
+)
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import AirzoneEntity, AirzoneZoneEntity
 from .const import DOMAIN, TEMP_UNIT_LIB_TO_HASS
 from .coordinator import AirzoneUpdateCoordinator
+from .entity import (
+    AirzoneEntity,
+    AirzoneHotWaterEntity,
+    AirzoneWebServerEntity,
+    AirzoneZoneEntity,
+)
+
+HOT_WATER_SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
+    SensorEntityDescription(
+        device_class=SensorDeviceClass.TEMPERATURE,
+        key=AZD_TEMP,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+)
+
+WEBSERVER_SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
+    SensorEntityDescription(
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        key=AZD_WIFI_RSSI,
+        translation_key="rssi",
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+)
 
 ZONE_SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
     SensorEntityDescription(
         device_class=SensorDeviceClass.TEMPERATURE,
         key=AZD_TEMP,
-        name="Temperature",
-        native_unit_of_measurement=TEMP_CELSIUS,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
         device_class=SensorDeviceClass.HUMIDITY,
         key=AZD_HUMIDITY,
-        name="Humidity",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
     ),
@@ -45,6 +83,31 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
     sensors: list[AirzoneSensor] = []
+
+    if AZD_HOT_WATER in coordinator.data:
+        dhw_data = coordinator.data[AZD_HOT_WATER]
+        for description in HOT_WATER_SENSOR_TYPES:
+            if description.key in dhw_data:
+                sensors.append(
+                    AirzoneHotWaterSensor(
+                        coordinator,
+                        description,
+                        entry,
+                    )
+                )
+
+    if AZD_WEBSERVER in coordinator.data:
+        ws_data = coordinator.data[AZD_WEBSERVER]
+        for description in WEBSERVER_SENSOR_TYPES:
+            if description.key in ws_data:
+                sensors.append(
+                    AirzoneWebServerSensor(
+                        coordinator,
+                        description,
+                        entry,
+                    )
+                )
+
     for system_zone_id, zone_data in coordinator.data[AZD_ZONES].items():
         for description in ZONE_SENSOR_TYPES:
             if description.key in zone_data:
@@ -64,10 +127,54 @@ async def async_setup_entry(
 class AirzoneSensor(AirzoneEntity, SensorEntity):
     """Define an Airzone sensor."""
 
-    @property
-    def native_value(self):
-        """Return the state."""
-        return self.get_airzone_value(self.entity_description.key)
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Update attributes when the coordinator updates."""
+        self._async_update_attrs()
+        super()._handle_coordinator_update()
+
+    @callback
+    def _async_update_attrs(self) -> None:
+        """Update sensor attributes."""
+        self._attr_native_value = self.get_airzone_value(self.entity_description.key)
+
+
+class AirzoneHotWaterSensor(AirzoneHotWaterEntity, AirzoneSensor):
+    """Define an Airzone Hot Water sensor."""
+
+    def __init__(
+        self,
+        coordinator: AirzoneUpdateCoordinator,
+        description: SensorEntityDescription,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize."""
+        super().__init__(coordinator, entry)
+
+        self._attr_unique_id = f"{self._attr_unique_id}_dhw_{description.key}"
+        self.entity_description = description
+
+        self._attr_native_unit_of_measurement = TEMP_UNIT_LIB_TO_HASS.get(
+            self.get_airzone_value(AZD_TEMP_UNIT)
+        )
+
+        self._async_update_attrs()
+
+
+class AirzoneWebServerSensor(AirzoneWebServerEntity, AirzoneSensor):
+    """Define an Airzone WebServer sensor."""
+
+    def __init__(
+        self,
+        coordinator: AirzoneUpdateCoordinator,
+        description: SensorEntityDescription,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{self._attr_unique_id}_ws_{description.key}"
+        self.entity_description = description
+        self._async_update_attrs()
 
 
 class AirzoneZoneSensor(AirzoneZoneEntity, AirzoneSensor):
@@ -84,7 +191,6 @@ class AirzoneZoneSensor(AirzoneZoneEntity, AirzoneSensor):
         """Initialize."""
         super().__init__(coordinator, entry, system_zone_id, zone_data)
 
-        self._attr_name = f"{zone_data[AZD_NAME]} {description.name}"
         self._attr_unique_id = (
             f"{self._attr_unique_id}_{system_zone_id}_{description.key}"
         )
@@ -94,3 +200,5 @@ class AirzoneZoneSensor(AirzoneZoneEntity, AirzoneSensor):
             self._attr_native_unit_of_measurement = TEMP_UNIT_LIB_TO_HASS.get(
                 self.get_airzone_value(AZD_TEMP_UNIT)
             )
+
+        self._async_update_attrs()

@@ -1,4 +1,5 @@
 """Base entity for the Twente Milieu integration."""
+
 from __future__ import annotations
 
 from datetime import date
@@ -7,8 +8,8 @@ from twentemilieu import WasteType
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID
-from homeassistant.helpers.device_registry import DeviceEntryType
-from homeassistant.helpers.entity import DeviceInfo, Entity
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -21,6 +22,8 @@ class TwenteMilieuEntity(
     CoordinatorEntity[DataUpdateCoordinator[dict[WasteType, list[date]]]], Entity
 ):
     """Defines a Twente Milieu entity."""
+
+    _attr_has_entity_name = True
 
     def __init__(
         self,

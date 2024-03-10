@@ -1,4 +1,5 @@
 """Tests for GIOS."""
+
 import json
 from unittest.mock import patch
 
@@ -21,6 +22,7 @@ async def init_integration(
         title="Home",
         unique_id="123",
         data={"station_id": 123, "name": "Home"},
+        entry_id="86129426118ae32020417a53712d6eef",
     )
 
     indexes = json.loads(load_fixture("gios/indexes.json"))
@@ -42,7 +44,8 @@ async def init_integration(
         "homeassistant.components.gios.Gios._get_all_sensors",
         return_value=sensors,
     ), patch(
-        "homeassistant.components.gios.Gios._get_indexes", return_value=indexes
+        "homeassistant.components.gios.Gios._get_indexes",
+        return_value=indexes,
     ):
         entry.add_to_hass(hass)
         await hass.config_entries.async_setup(entry.entry_id)

@@ -1,4 +1,5 @@
 """Support for Dominos Pizza ordering."""
+
 from datetime import timedelta
 import logging
 
@@ -67,9 +68,9 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up is called when Home Assistant is loading our component."""
     dominos = Dominos(hass, config)
 
-    component = EntityComponent(_LOGGER, DOMAIN, hass)
+    component = EntityComponent[DominosOrder](_LOGGER, DOMAIN, hass)
     hass.data[DOMAIN] = {}
-    entities = []
+    entities: list[DominosOrder] = []
     conf = config[DOMAIN]
 
     hass.services.register(
@@ -90,8 +91,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
         order = DominosOrder(order_info, dominos)
         entities.append(order)
 
-    if entities:
-        component.add_entities(entities)
+    component.add_entities(entities)
 
     # Return boolean to indicate that initialization was successfully.
     return True

@@ -1,4 +1,5 @@
 """Support for showing values from Dweet.io."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -92,7 +93,7 @@ class DweetSensor(SensorEntity):
         """Return the state."""
         return self._state
 
-    def update(self):
+    def update(self) -> None:
         """Get the latest data from REST API."""
         self.dweet.update()
 

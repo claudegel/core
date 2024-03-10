@@ -1,4 +1,5 @@
 """Diagnostics support for deCONZ."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -8,7 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_UNIQUE_ID
 from homeassistant.core import HomeAssistant
 
-from .gateway import get_gateway_from_config_entry
+from .hub import get_gateway_from_config_entry
 
 REDACT_CONFIG = {CONF_API_KEY, CONF_UNIQUE_ID}
 REDACT_DECONZ_CONFIG = {"bridgeid", "mac", "panid"}
@@ -26,7 +27,7 @@ async def async_get_config_entry_diagnostics(
         gateway.api.config.raw, REDACT_DECONZ_CONFIG
     )
     diag["websocket_state"] = (
-        gateway.api.websocket.state if gateway.api.websocket else "Unknown"
+        gateway.api.websocket.state.value if gateway.api.websocket else "Unknown"
     )
     diag["deconz_ids"] = gateway.deconz_ids
     diag["entities"] = gateway.entities
@@ -37,7 +38,7 @@ async def async_get_config_entry_diagnostics(
         }
         for event in gateway.events
     }
-    diag["alarm_systems"] = {k: v.raw for k, v in gateway.api.alarmsystems.items()}
+    diag["alarm_systems"] = {k: v.raw for k, v in gateway.api.alarm_systems.items()}
     diag["groups"] = {k: v.raw for k, v in gateway.api.groups.items()}
     diag["lights"] = {k: v.raw for k, v in gateway.api.lights.items()}
     diag["scenes"] = {k: v.raw for k, v in gateway.api.scenes.items()}

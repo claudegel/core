@@ -1,11 +1,12 @@
 """Support for the myStrom buttons."""
+
 from __future__ import annotations
 
 from http import HTTPStatus
 import logging
 
 from homeassistant.components.binary_sensor import DOMAIN, BinarySensorEntity
-from homeassistant.components.http import HomeAssistantView
+from homeassistant.components.http import KEY_HASS, HomeAssistantView
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -37,7 +38,7 @@ class MyStromView(HomeAssistantView):
 
     async def get(self, request):
         """Handle the GET request received from a myStrom button."""
-        res = await self._handle(request.app["hass"], request.query)
+        res = await self._handle(request.app[KEY_HASS], request.query)
         return res
 
     async def _handle(self, hass, data):
@@ -72,6 +73,8 @@ class MyStromView(HomeAssistantView):
 class MyStromBinarySensor(BinarySensorEntity):
     """Representation of a myStrom button."""
 
+    _attr_should_poll = False
+
     def __init__(self, button_id):
         """Initialize the myStrom Binary sensor."""
         self._button_id = button_id
@@ -81,11 +84,6 @@ class MyStromBinarySensor(BinarySensorEntity):
     def name(self):
         """Return the name of the sensor."""
         return self._button_id
-
-    @property
-    def should_poll(self):
-        """No polling needed."""
-        return False
 
     @property
     def is_on(self):

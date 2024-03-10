@@ -1,4 +1,5 @@
 """Support for KNX/IP climate devices."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -8,9 +9,9 @@ from xknx.devices import Climate as XknxClimate, ClimateMode as XknxClimateMode
 from xknx.dpt.dpt_hvac_mode import HVACControllerMode, HVACOperationMode
 
 from homeassistant import config_entries
-from homeassistant.components.climate import ClimateEntity
-from homeassistant.components.climate.const import (
+from homeassistant.components.climate import (
     PRESET_AWAY,
+    ClimateEntity,
     ClimateEntityFeature,
     HVACAction,
     HVACMode,
@@ -19,8 +20,8 @@ from homeassistant.const import (
     ATTR_TEMPERATURE,
     CONF_ENTITY_CATEGORY,
     CONF_NAME,
-    TEMP_CELSIUS,
     Platform,
+    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -133,13 +134,18 @@ class KNXClimate(KnxEntity, ClimateEntity):
     """Representation of a KNX climate device."""
 
     _device: XknxClimate
-    _attr_temperature_unit = TEMP_CELSIUS
+    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _enable_turn_on_off_backwards_compatibility = False
 
     def __init__(self, xknx: XKNX, config: ConfigType) -> None:
         """Initialize of a KNX climate device."""
         super().__init__(_create_climate(xknx, config))
         self._attr_entity_category = config.get(CONF_ENTITY_CATEGORY)
-        self._attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+        self._attr_supported_features = (
+            ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.TURN_ON
+        )
+        if self._device.supports_on_off:
+            self._attr_supported_features |= ClimateEntityFeature.TURN_OFF
         if self.preset_modes:
             self._attr_supported_features |= ClimateEntityFeature.PRESET_MODE
         self._attr_target_temperature_step = self._device.temperature_step

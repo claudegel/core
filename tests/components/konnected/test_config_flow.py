@@ -1,4 +1,5 @@
 """Tests for Konnected Alarm Panel config flow."""
+
 from unittest.mock import patch
 
 import pytest
@@ -6,6 +7,7 @@ import pytest
 from homeassistant import config_entries
 from homeassistant.components import konnected, ssdp
 from homeassistant.components.konnected import config_flow
+from homeassistant.core import HomeAssistant
 
 from tests.common import MockConfigEntry
 
@@ -26,7 +28,7 @@ async def mock_panel_fixture():
         yield konn_client
 
 
-async def test_flow_works(hass, mock_panel):
+async def test_flow_works(hass: HomeAssistant, mock_panel) -> None:
     """Test config flow ."""
     result = await hass.config_entries.flow.async_init(
         config_flow.DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -63,7 +65,7 @@ async def test_flow_works(hass, mock_panel):
     )
 
 
-async def test_pro_flow_works(hass, mock_panel):
+async def test_pro_flow_works(hass: HomeAssistant, mock_panel) -> None:
     """Test config flow ."""
     result = await hass.config_entries.flow.async_init(
         config_flow.DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -102,7 +104,7 @@ async def test_pro_flow_works(hass, mock_panel):
     )
 
 
-async def test_ssdp(hass, mock_panel):
+async def test_ssdp(hass: HomeAssistant, mock_panel) -> None:
     """Test a panel being discovered."""
     mock_panel.get_status.return_value = {
         "mac": "11:22:33:44:55:66",
@@ -229,7 +231,7 @@ async def test_ssdp(hass, mock_panel):
     assert result["reason"] == "already_configured"
 
 
-async def test_import_no_host_user_finish(hass, mock_panel):
+async def test_import_no_host_user_finish(hass: HomeAssistant, mock_panel) -> None:
     """Test importing a panel with no host info."""
     mock_panel.get_status.return_value = {
         "mac": "aa:bb:cc:dd:ee:ff",
@@ -295,7 +297,7 @@ async def test_import_no_host_user_finish(hass, mock_panel):
     assert result["type"] == "create_entry"
 
 
-async def test_import_ssdp_host_user_finish(hass, mock_panel):
+async def test_import_ssdp_host_user_finish(hass: HomeAssistant, mock_panel) -> None:
     """Test importing a pro panel with no host info which ssdp discovers."""
     mock_panel.get_status.return_value = {
         "chipId": "somechipid",
@@ -372,7 +374,7 @@ async def test_import_ssdp_host_user_finish(hass, mock_panel):
     assert result["type"] == "create_entry"
 
 
-async def test_ssdp_already_configured(hass, mock_panel):
+async def test_ssdp_already_configured(hass: HomeAssistant, mock_panel) -> None:
     """Test if a discovered panel has already been configured."""
     MockConfigEntry(
         domain="konnected",
@@ -401,7 +403,7 @@ async def test_ssdp_already_configured(hass, mock_panel):
     assert result["reason"] == "already_configured"
 
 
-async def test_ssdp_host_update(hass, mock_panel):
+async def test_ssdp_host_update(hass: HomeAssistant, mock_panel) -> None:
     """Test if a discovered panel has already been configured but changed host."""
     device_config = config_flow.CONFIG_ENTRY_SCHEMA(
         {
@@ -486,7 +488,7 @@ async def test_ssdp_host_update(hass, mock_panel):
     assert entry.data["access_token"] == "11223344556677889900"
 
 
-async def test_import_existing_config(hass, mock_panel):
+async def test_import_existing_config(hass: HomeAssistant, mock_panel) -> None:
     """Test importing a host with an existing config file."""
     mock_panel.get_status.return_value = {
         "mac": "11:22:33:44:55:66",
@@ -605,7 +607,7 @@ async def test_import_existing_config(hass, mock_panel):
     }
 
 
-async def test_import_existing_config_entry(hass, mock_panel):
+async def test_import_existing_config_entry(hass: HomeAssistant, mock_panel) -> None:
     """Test importing a host that has an existing config entry."""
     MockConfigEntry(
         domain="konnected",
@@ -677,7 +679,7 @@ async def test_import_existing_config_entry(hass, mock_panel):
     }
 
 
-async def test_import_pin_config(hass, mock_panel):
+async def test_import_pin_config(hass: HomeAssistant, mock_panel) -> None:
     """Test importing a host with an existing config file that specifies pin configs."""
     mock_panel.get_status.return_value = {
         "mac": "11:22:33:44:55:66",
@@ -774,7 +776,7 @@ async def test_import_pin_config(hass, mock_panel):
     }
 
 
-async def test_option_flow(hass, mock_panel):
+async def test_option_flow(hass: HomeAssistant, mock_panel) -> None:
     """Test config flow options."""
     device_config = config_flow.CONFIG_ENTRY_SCHEMA(
         {
@@ -960,7 +962,7 @@ async def test_option_flow(hass, mock_panel):
     }
 
 
-async def test_option_flow_pro(hass, mock_panel):
+async def test_option_flow_pro(hass: HomeAssistant, mock_panel) -> None:
     """Test config flow options for pro board."""
     device_config = config_flow.CONFIG_ENTRY_SCHEMA(
         {
@@ -1146,7 +1148,7 @@ async def test_option_flow_pro(hass, mock_panel):
     }
 
 
-async def test_option_flow_import(hass, mock_panel):
+async def test_option_flow_import(hass: HomeAssistant, mock_panel) -> None:
     """Test config flow options imported from configuration.yaml."""
     device_options = config_flow.OPTIONS_SCHEMA(
         {
@@ -1298,7 +1300,7 @@ async def test_option_flow_import(hass, mock_panel):
     }
 
 
-async def test_option_flow_existing(hass, mock_panel):
+async def test_option_flow_existing(hass: HomeAssistant, mock_panel) -> None:
     """Test config flow options with existing already in place."""
     device_options = config_flow.OPTIONS_SCHEMA(
         {

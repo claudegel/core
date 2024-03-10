@@ -1,4 +1,5 @@
 """Representation of a fan."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -66,7 +67,7 @@ class ZWaveMeFan(ZWaveMeEntity, FanEntity):
         self,
         percentage: int | None = None,
         preset_mode: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Turn on the fan."""
         self.set_percentage(percentage if percentage is not None else 99)

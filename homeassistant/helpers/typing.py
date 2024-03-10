@@ -1,18 +1,20 @@
 """Typing Helpers for Home Assistant."""
+
 from collections.abc import Mapping
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any, TypeVar
 
 import homeassistant.core
+
+_DataT = TypeVar("_DataT")
 
 GPSType = tuple[float, float]
 ConfigType = dict[str, Any]
 ContextType = homeassistant.core.Context
 DiscoveryInfoType = dict[str, Any]
-EventType = homeassistant.core.Event
 ServiceDataType = dict[str, Any]
-StateType = Union[None, str, int, float]
-TemplateVarsType = Optional[Mapping[str, Any]]
+StateType = str | int | float | None
+TemplateVarsType = Mapping[str, Any] | None
 
 # Custom type for recorder Queries
 QueryType = Any
@@ -26,10 +28,12 @@ class UndefinedType(Enum):
 
 UNDEFINED = UndefinedType._singleton  # pylint: disable=protected-access
 
+
 # The following types should not used and
 # are not present in the core code base.
 # They are kept in order not to break custom integrations
 # that may rely on them.
 # In due time they will be removed.
+EventType = homeassistant.core.Event
 HomeAssistantType = homeassistant.core.HomeAssistant
 ServiceCallType = homeassistant.core.ServiceCall

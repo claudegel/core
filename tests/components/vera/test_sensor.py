@@ -1,4 +1,5 @@
 """Vera tests."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -40,7 +41,7 @@ async def run_sensor_test(
     )
     update_callback = component_data.controller_data[0].update_callback
 
-    for (initial_value, state_value) in assert_states:
+    for initial_value, state_value in assert_states:
         setattr(vera_device, class_property, initial_value)
         update_callback(vera_device)
         await hass.async_block_till_done()

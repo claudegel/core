@@ -1,4 +1,5 @@
 """Test EQ3 Max! Window Shutters."""
+
 from datetime import timedelta
 
 from maxcube.cube import MaxCube
@@ -10,9 +11,10 @@ from homeassistant.const import (
     ATTR_FRIENDLY_NAME,
     STATE_OFF,
     STATE_ON,
+    EntityCategory,
 )
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.util import utcnow
 
 from tests.common import async_fire_time_changed
@@ -21,9 +23,13 @@ ENTITY_ID = "binary_sensor.testroom_testshutter"
 BATTERY_ENTITY_ID = f"{ENTITY_ID}_battery"
 
 
-async def test_window_shuttler(hass, cube: MaxCube, windowshutter: MaxWindowShutter):
+async def test_window_shuttler(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    cube: MaxCube,
+    windowshutter: MaxWindowShutter,
+) -> None:
     """Test a successful setup with a shuttler device."""
-    entity_registry = er.async_get(hass)
     assert entity_registry.async_is_registered(ENTITY_ID)
     entity = entity_registry.async_get(ENTITY_ID)
     assert entity.unique_id == "AABBCCDD03"
@@ -44,10 +50,12 @@ async def test_window_shuttler(hass, cube: MaxCube, windowshutter: MaxWindowShut
 
 
 async def test_window_shuttler_battery(
-    hass, cube: MaxCube, windowshutter: MaxWindowShutter
-):
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    cube: MaxCube,
+    windowshutter: MaxWindowShutter,
+) -> None:
     """Test battery binary_state with a shuttler device."""
-    entity_registry = er.async_get(hass)
     assert entity_registry.async_is_registered(BATTERY_ENTITY_ID)
     entity = entity_registry.async_get(BATTERY_ENTITY_ID)
     assert entity.unique_id == "AABBCCDD03_battery"

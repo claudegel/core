@@ -1,4 +1,5 @@
 """Platform for the Aladdin Connect cover component."""
+
 from __future__ import annotations
 
 from typing import Final
@@ -16,4 +17,6 @@ STATES_MAP: Final[dict[str, str]] = {
     "closing": STATE_CLOSING,
 }
 
+DOMAIN = "aladdin_connect"
 SUPPORTED_FEATURES: Final = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
+CLIENT_ID = "1000"

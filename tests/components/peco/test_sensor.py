@@ -1,4 +1,5 @@
 """Test the PECO Outage Counter sensors."""
+
 from unittest.mock import patch
 
 from peco import AlertResults, OutageResults
@@ -16,7 +17,7 @@ INVALID_COUNTY_DATA = {"county": "INVALID"}
 
 
 @pytest.mark.parametrize(
-    "sensor,expected",
+    ("sensor", "expected"),
     [
         ("customers_out", "123"),
         ("percent_customers_out", "15"),
@@ -41,15 +42,14 @@ async def test_sensor_available(
             outage_count=456,
             customers_served=789,
         ),
+    ), patch(
+        "peco.PecoOutageApi.get_map_alerts",
+        return_value=AlertResults(
+            alert_content="Testing 1234", alert_title="Testing 4321"
+        ),
     ):
-        with patch(
-            "peco.PecoOutageApi.get_map_alerts",
-            return_value=AlertResults(
-                alert_content="Testing 1234", alert_title="Testing 4321"
-            ),
-        ):
-            assert await hass.config_entries.async_setup(config_entry.entry_id)
-            await hass.async_block_till_done()
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
     assert hass.data[DOMAIN]
 
     entries = hass.config_entries.async_entries(DOMAIN)
@@ -74,15 +74,14 @@ async def test_sensor_available(
             outage_count=456,
             customers_served=789,
         ),
+    ), patch(
+        "peco.PecoOutageApi.get_map_alerts",
+        return_value=AlertResults(
+            alert_content="Testing 1234", alert_title="Testing 4321"
+        ),
     ):
-        with patch(
-            "peco.PecoOutageApi.get_map_alerts",
-            return_value=AlertResults(
-                alert_content="Testing 1234", alert_title="Testing 4321"
-            ),
-        ):
-            assert await hass.config_entries.async_setup(config_entry.entry_id)
-            await hass.async_block_till_done()
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
 
     entries = hass.config_entries.async_entries(DOMAIN)
     assert len(entries) == 2

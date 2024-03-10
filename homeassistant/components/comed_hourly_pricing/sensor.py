@@ -1,4 +1,5 @@
 """Support for ComEd Hourly Pricing data."""
+
 from __future__ import annotations
 
 import asyncio
@@ -7,7 +8,6 @@ import json
 import logging
 
 import aiohttp
-import async_timeout
 import voluptuous as vol
 
 from homeassistant.components.sensor import (
@@ -15,7 +15,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
-from homeassistant.const import ATTR_ATTRIBUTION, CONF_NAME, CONF_OFFSET
+from homeassistant.const import CONF_NAME, CONF_OFFSET
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
@@ -26,8 +26,6 @@ _LOGGER = logging.getLogger(__name__)
 _RESOURCE = "https://hourlypricing.comed.com/api"
 
 SCAN_INTERVAL = timedelta(minutes=5)
-
-ATTRIBUTION = "Data provided by ComEd Hourly Pricing service"
 
 CONF_CURRENT_HOUR_AVERAGE = "current_hour_average"
 CONF_FIVE_MINUTE = "five_minute"
@@ -91,9 +89,11 @@ async def async_setup_platform(
 class ComedHourlyPricingSensor(SensorEntity):
     """Implementation of a ComEd Hourly Pricing sensor."""
 
-    _attr_extra_state_attributes = {ATTR_ATTRIBUTION: ATTRIBUTION}
+    _attr_attribution = "Data provided by ComEd Hourly Pricing service"
 
-    def __init__(self, websession, offset, name, description: SensorEntityDescription):
+    def __init__(
+        self, websession, offset, name, description: SensorEntityDescription
+    ) -> None:
         """Initialize the sensor."""
         self.entity_description = description
         self.websession = websession
@@ -101,7 +101,7 @@ class ComedHourlyPricingSensor(SensorEntity):
             self._attr_name = name
         self.offset = offset
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Get the ComEd Hourly Pricing data from the web service."""
         try:
             sensor_type = self.entity_description.key
@@ -112,7 +112,7 @@ class ComedHourlyPricingSensor(SensorEntity):
                 else:
                     url_string += "?type=currenthouraverage"
 
-                async with async_timeout.timeout(60):
+                async with asyncio.timeout(60):
                     response = await self.websession.get(url_string)
                     # The API responds with MIME type 'text/html'
                     text = await response.text()
@@ -124,7 +124,7 @@ class ComedHourlyPricingSensor(SensorEntity):
             else:
                 self._attr_native_value = None
 
-        except (asyncio.TimeoutError, aiohttp.ClientError) as err:
+        except (TimeoutError, aiohttp.ClientError) as err:
             _LOGGER.error("Could not get data from ComEd API: %s", err)
         except (ValueError, KeyError):
             _LOGGER.warning("Could not update status for %s", self.name)

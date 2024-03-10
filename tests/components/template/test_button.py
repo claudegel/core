@@ -1,11 +1,11 @@
 """The tests for the Template button platform."""
-import datetime as dt
-from unittest.mock import patch
 
-import pytest
+import datetime as dt
+
+from freezegun.api import FrozenDateTimeFactory
 
 from homeassistant import setup
-from homeassistant.components.button.const import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
+from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
 from homeassistant.components.template.button import DEFAULT_NAME
 from homeassistant.const import (
     CONF_DEVICE_CLASS,
@@ -14,21 +14,16 @@ from homeassistant.const import (
     CONF_ICON,
     STATE_UNKNOWN,
 )
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_registry import async_get
 
-from tests.common import assert_setup_component, async_mock_service
+from tests.common import assert_setup_component
 
 _TEST_BUTTON = "button.template_button"
 _TEST_OPTIONS_BUTTON = "button.test"
 
 
-@pytest.fixture
-def calls(hass):
-    """Track calls to a mock service."""
-    return async_mock_service(hass, "test", "automation")
-
-
-async def test_missing_optional_config(hass, calls):
+async def test_missing_optional_config(hass: HomeAssistant) -> None:
     """Test: missing optional template is ok."""
     with assert_setup_component(1, "template"):
         assert await setup.async_setup_component(
@@ -50,7 +45,7 @@ async def test_missing_optional_config(hass, calls):
     _verify(hass, STATE_UNKNOWN)
 
 
-async def test_missing_required_keys(hass, calls):
+async def test_missing_required_keys(hass: HomeAssistant) -> None:
     """Test: missing required fields will fail."""
     with assert_setup_component(0, "template"):
         assert await setup.async_setup_component(
@@ -66,7 +61,9 @@ async def test_missing_required_keys(hass, calls):
     assert hass.states.async_all("button") == []
 
 
-async def test_all_optional_config(hass, calls):
+async def test_all_optional_config(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, calls
+) -> None:
     """Test: including all optional templates is ok."""
     with assert_setup_component(1, "template"):
         assert await setup.async_setup_component(
@@ -76,7 +73,10 @@ async def test_all_optional_config(hass, calls):
                 "template": {
                     "unique_id": "test",
                     "button": {
-                        "press": {"service": "test.automation"},
+                        "press": {
+                            "service": "test.automation",
+                            "data_template": {"caller": "{{ this.entity_id }}"},
+                        },
                         "device_class": "restart",
                         "unique_id": "test",
                         "name": "test",
@@ -101,17 +101,17 @@ async def test_all_optional_config(hass, calls):
         _TEST_OPTIONS_BUTTON,
     )
 
-    now = dt.datetime.now(dt.timezone.utc)
-
-    with patch("homeassistant.util.dt.utcnow", return_value=now):
-        await hass.services.async_call(
-            BUTTON_DOMAIN,
-            SERVICE_PRESS,
-            {CONF_ENTITY_ID: _TEST_OPTIONS_BUTTON},
-            blocking=True,
-        )
+    now = dt.datetime.now(dt.UTC)
+    freezer.move_to(now)
+    await hass.services.async_call(
+        BUTTON_DOMAIN,
+        SERVICE_PRESS,
+        {CONF_ENTITY_ID: _TEST_OPTIONS_BUTTON},
+        blocking=True,
+    )
 
     assert len(calls) == 1
+    assert calls[0].data["caller"] == _TEST_OPTIONS_BUTTON
 
     _verify(
         hass,
@@ -128,7 +128,7 @@ async def test_all_optional_config(hass, calls):
     assert er.async_get_entity_id("button", "template", "test-test")
 
 
-async def test_name_template(hass, calls):
+async def test_name_template(hass: HomeAssistant) -> None:
     """Test: name template."""
     with assert_setup_component(1, "template"):
         assert await setup.async_setup_component(
@@ -158,7 +158,7 @@ async def test_name_template(hass, calls):
     )
 
 
-async def test_unique_id(hass, calls):
+async def test_unique_id(hass: HomeAssistant) -> None:
     """Test: unique id is ok."""
     with assert_setup_component(1, "template"):
         assert await setup.async_setup_component(

@@ -13,7 +13,7 @@ from tololib.message_info import SettingsInfo, StatusInfo
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -42,7 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
@@ -63,7 +63,7 @@ class ToloSaunaData(NamedTuple):
     settings: SettingsInfo
 
 
-class ToloSaunaUpdateCoordinator(DataUpdateCoordinator[ToloSaunaData]):
+class ToloSaunaUpdateCoordinator(DataUpdateCoordinator[ToloSaunaData]):  # pylint: disable=hass-enforce-coordinator-module
     """DataUpdateCoordinator for TOLO Sauna."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -92,8 +92,10 @@ class ToloSaunaUpdateCoordinator(DataUpdateCoordinator[ToloSaunaData]):
         return ToloSaunaData(status, settings)
 
 
-class ToloSaunaCoordinatorEntity(CoordinatorEntity[ToloSaunaUpdateCoordinator]):
+class ToloSaunaCoordinatorEntity(CoordinatorEntity[ToloSaunaUpdateCoordinator]):  # pylint: disable=hass-enforce-coordinator-module
     """CoordinatorEntity for TOLO Sauna."""
+
+    _attr_has_entity_name = True
 
     def __init__(
         self, coordinator: ToloSaunaUpdateCoordinator, entry: ConfigEntry

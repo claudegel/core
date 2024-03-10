@@ -1,13 +1,14 @@
 """Support for the Philips Hue lights."""
+
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 from functools import partial
 import logging
 import random
 
 import aiohue
-import async_timeout
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -28,7 +29,7 @@ from homeassistant.components.light import (
 from homeassistant.core import callback
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.debounce import Debouncer
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -108,7 +109,7 @@ def create_light(item_class, coordinator, bridge, is_group, rooms, api, item_id)
 
     if is_group:
         supported_color_modes = set()
-        supported_features = 0
+        supported_features = LightEntityFeature(0)
         for light_id in api_item.lights:
             if light_id not in bridge.api.lights:
                 continue
@@ -224,7 +225,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         # Once we do a rooms update, we cancel the listener
         # until the next time lights are added
         bridge.reset_jobs.remove(cancel_update_rooms_listener)
-        cancel_update_rooms_listener()  # pylint: disable=not-callable
+        cancel_update_rooms_listener()
         cancel_update_rooms_listener = None
 
     @callback
@@ -262,7 +263,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 async def async_safe_fetch(bridge, fetch_method):
     """Safely fetch data."""
     try:
-        with async_timeout.timeout(4):
+        async with asyncio.timeout(4):
             return await bridge.async_request_call(fetch_method)
     except aiohue.Unauthorized as err:
         await bridge.handle_unauthorized_error()
@@ -341,6 +342,7 @@ class HueLight(CoordinatorEntity, LightEntity):
             self.is_innr = False
             self.is_ewelink = False
             self.is_livarno = False
+            self.is_s31litezb = False
             self.gamut_typ = GAMUT_TYPE_UNAVAILABLE
             self.gamut = None
         else:
@@ -349,6 +351,7 @@ class HueLight(CoordinatorEntity, LightEntity):
             self.is_innr = light.manufacturername == "innr"
             self.is_ewelink = light.manufacturername == "eWeLink"
             self.is_livarno = light.manufacturername.startswith("_TZ3000_")
+            self.is_s31litezb = light.modelid == "S31 Lite zb"
             self.gamut_typ = self.light.colorgamuttype
             self.gamut = self.light.colorgamut
             LOGGER.debug("Color gamut of %s: %s", self.name, str(self.gamut))
@@ -554,7 +557,12 @@ class HueLight(CoordinatorEntity, LightEntity):
         elif flash == FLASH_SHORT:
             command["alert"] = "select"
             del command["on"]
-        elif not self.is_innr and not self.is_ewelink and not self.is_livarno:
+        elif (
+            not self.is_innr
+            and not self.is_ewelink
+            and not self.is_livarno
+            and not self.is_s31litezb
+        ):
             command["alert"] = "none"
 
         if ATTR_EFFECT in kwargs:

@@ -1,8 +1,10 @@
 """Support for X10 lights."""
+
 from __future__ import annotations
 
 import logging
 from subprocess import STDOUT, CalledProcessError, check_output
+from typing import Any
 
 import voluptuous as vol
 
@@ -87,7 +89,7 @@ class X10Light(LightEntity):
         """Return true if light is on."""
         return self._state
 
-    def turn_on(self, **kwargs):
+    def turn_on(self, **kwargs: Any) -> None:
         """Instruct the light to turn on."""
         if self._is_cm11a:
             x10_command(f"on {self._id}")
@@ -96,7 +98,7 @@ class X10Light(LightEntity):
         self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         self._state = True
 
-    def turn_off(self, **kwargs):
+    def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         if self._is_cm11a:
             x10_command(f"off {self._id}")
@@ -104,7 +106,7 @@ class X10Light(LightEntity):
             x10_command(f"foff {self._id}")
         self._state = False
 
-    def update(self):
+    def update(self) -> None:
         """Fetch update state."""
         if self._is_cm11a:
             self._state = bool(get_unit_status(self._id))

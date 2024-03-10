@@ -1,7 +1,7 @@
 """Support for Renault sensors."""
+
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
 
@@ -13,27 +13,18 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import DEVICE_CLASS_CHARGE_MODE, DOMAIN
-from .renault_entities import RenaultDataEntity, RenaultDataEntityDescription
+from .const import DOMAIN
+from .entity import RenaultDataEntity, RenaultDataEntityDescription
 from .renault_hub import RenaultHub
 
 
-@dataclass
-class RenaultSelectRequiredKeysMixin:
-    """Mixin for required keys."""
-
-    data_key: str
-    icon_lambda: Callable[[RenaultSelectEntity], str]
-    options: list[str]
-
-
-@dataclass
+@dataclass(frozen=True, kw_only=True)
 class RenaultSelectEntityDescription(
-    SelectEntityDescription,
-    RenaultDataEntityDescription,
-    RenaultSelectRequiredKeysMixin,
+    SelectEntityDescription, RenaultDataEntityDescription
 ):
     """Class describing Renault select entities."""
+
+    data_key: str
 
 
 async def async_setup_entry(
@@ -69,26 +60,9 @@ class RenaultSelectEntity(
         """Return the state of this entity."""
         return self._get_data_attr(self.entity_description.data_key)
 
-    @property
-    def icon(self) -> str | None:
-        """Icon handling."""
-        return self.entity_description.icon_lambda(self)
-
-    @property
-    def options(self) -> list[str]:
-        """Return a set of selectable options."""
-        return self.entity_description.options
-
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
-        await self.vehicle.vehicle.set_charge_mode(option)
-
-
-def _get_charge_mode_icon(entity: RenaultSelectEntity) -> str:
-    """Return the icon of this entity."""
-    if entity.data == "schedule_mode":
-        return "mdi:calendar-clock"
-    return "mdi:calendar-remove"
+        await self.vehicle.set_charge_mode(option)
 
 
 SENSOR_TYPES: tuple[RenaultSelectEntityDescription, ...] = (
@@ -96,9 +70,7 @@ SENSOR_TYPES: tuple[RenaultSelectEntityDescription, ...] = (
         key="charge_mode",
         coordinator="charge_mode",
         data_key="chargeMode",
-        device_class=DEVICE_CLASS_CHARGE_MODE,
-        icon_lambda=_get_charge_mode_icon,
-        name="Charge Mode",
+        translation_key="charge_mode",
         options=["always", "always_charging", "schedule_mode"],
     ),
 )

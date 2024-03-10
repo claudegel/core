@@ -1,4 +1,5 @@
 """Test schemas."""
+
 import logging
 
 import pytest
@@ -53,13 +54,13 @@ _LOGGER = logging.getLogger(__name__)
         },
     ),
 )
-def test_blueprint_schema(blueprint):
+def test_blueprint_schema(blueprint) -> None:
     """Test different schemas."""
     try:
         schemas.BLUEPRINT_SCHEMA(blueprint)
     except vol.Invalid:
         _LOGGER.exception("%s", blueprint)
-        assert False, "Expected schema to be valid"
+        pytest.fail("Expected schema to be valid")
 
 
 @pytest.mark.parametrize(
@@ -95,7 +96,7 @@ def test_blueprint_schema(blueprint):
         },
     ),
 )
-def test_blueprint_schema_invalid(blueprint):
+def test_blueprint_schema_invalid(blueprint) -> None:
     """Test different schemas."""
     with pytest.raises(vol.Invalid):
         schemas.BLUEPRINT_SCHEMA(blueprint)
@@ -109,6 +110,6 @@ def test_blueprint_schema_invalid(blueprint):
         {"path": "hello.yaml", "input": {"hello": None}},
     ),
 )
-def test_blueprint_instance_fields(bp_instance):
+def test_blueprint_instance_fields(bp_instance) -> None:
     """Test blueprint instance fields."""
     schemas.BLUEPRINT_INSTANCE_FIELDS({"use_blueprint": bp_instance})

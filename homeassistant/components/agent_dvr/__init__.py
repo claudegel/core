@@ -1,4 +1,5 @@
 """Support for Agent."""
+
 from agent import AgentError
 from agent.a import Agent
 
@@ -48,7 +49,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         sw_version=agent_client.version,
     )
 
-    hass.config_entries.async_setup_platforms(config_entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
 

@@ -1,4 +1,5 @@
 """Support for WLED switches."""
+
 from __future__ import annotations
 
 from functools import partial
@@ -6,8 +7,8 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -53,22 +54,22 @@ async def async_setup_entry(
 class WLEDNightlightSwitch(WLEDEntity, SwitchEntity):
     """Defines a WLED nightlight switch."""
 
-    _attr_icon = "mdi:weather-night"
     _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "nightlight"
 
     def __init__(self, coordinator: WLEDDataUpdateCoordinator) -> None:
         """Initialize WLED nightlight switch."""
         super().__init__(coordinator=coordinator)
-        self._attr_name = f"{coordinator.data.info.name} Nightlight"
         self._attr_unique_id = f"{coordinator.data.info.mac_address}_nightlight"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return the state attributes of the entity."""
+        state = self.coordinator.data.state
         return {
-            ATTR_DURATION: self.coordinator.data.state.nightlight.duration,
-            ATTR_FADE: self.coordinator.data.state.nightlight.fade,
-            ATTR_TARGET_BRIGHTNESS: self.coordinator.data.state.nightlight.target_brightness,
+            ATTR_DURATION: state.nightlight.duration,
+            ATTR_FADE: state.nightlight.fade,
+            ATTR_TARGET_BRIGHTNESS: state.nightlight.target_brightness,
         }
 
     @property
@@ -90,13 +91,12 @@ class WLEDNightlightSwitch(WLEDEntity, SwitchEntity):
 class WLEDSyncSendSwitch(WLEDEntity, SwitchEntity):
     """Defines a WLED sync send switch."""
 
-    _attr_icon = "mdi:upload-network-outline"
     _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "sync_send"
 
     def __init__(self, coordinator: WLEDDataUpdateCoordinator) -> None:
         """Initialize WLED sync send switch."""
         super().__init__(coordinator=coordinator)
-        self._attr_name = f"{coordinator.data.info.name} Sync Send"
         self._attr_unique_id = f"{coordinator.data.info.mac_address}_sync_send"
 
     @property
@@ -123,13 +123,12 @@ class WLEDSyncSendSwitch(WLEDEntity, SwitchEntity):
 class WLEDSyncReceiveSwitch(WLEDEntity, SwitchEntity):
     """Defines a WLED sync receive switch."""
 
-    _attr_icon = "mdi:download-network-outline"
     _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "sync_receive"
 
     def __init__(self, coordinator: WLEDDataUpdateCoordinator) -> None:
         """Initialize WLED sync receive switch."""
         super().__init__(coordinator=coordinator)
-        self._attr_name = f"{coordinator.data.info.name} Sync Receive"
         self._attr_unique_id = f"{coordinator.data.info.mac_address}_sync_receive"
 
     @property
@@ -156,8 +155,8 @@ class WLEDSyncReceiveSwitch(WLEDEntity, SwitchEntity):
 class WLEDReverseSwitch(WLEDEntity, SwitchEntity):
     """Defines a WLED reverse effect switch."""
 
-    _attr_icon = "mdi:swap-horizontal-bold"
     _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "reverse"
     _segment: int
 
     def __init__(self, coordinator: WLEDDataUpdateCoordinator, segment: int) -> None:
@@ -166,9 +165,9 @@ class WLEDReverseSwitch(WLEDEntity, SwitchEntity):
 
         # Segment 0 uses a simpler name, which is more natural for when using
         # a single segment / using WLED with one big LED strip.
-        self._attr_name = f"{coordinator.data.info.name} Segment {segment} Reverse"
-        if segment == 0:
-            self._attr_name = f"{coordinator.data.info.name} Reverse"
+        if segment != 0:
+            self._attr_translation_key = "segment_reverse"
+            self._attr_translation_placeholders = {"segment": str(segment)}
 
         self._attr_unique_id = f"{coordinator.data.info.mac_address}_reverse_{segment}"
         self._segment = segment
@@ -203,17 +202,16 @@ class WLEDReverseSwitch(WLEDEntity, SwitchEntity):
 def async_update_segments(
     coordinator: WLEDDataUpdateCoordinator,
     current_ids: set[int],
-    async_add_entities,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Update segments."""
     segment_ids = {segment.segment_id for segment in coordinator.data.state.segments}
 
-    new_entities = []
+    new_entities: list[WLEDReverseSwitch] = []
 
     # Process new segments, add them to Home Assistant
     for segment_id in segment_ids - current_ids:
         current_ids.add(segment_id)
         new_entities.append(WLEDReverseSwitch(coordinator, segment_id))
 
-    if new_entities:
-        async_add_entities(new_entities)
+    async_add_entities(new_entities)

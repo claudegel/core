@@ -1,4 +1,5 @@
 """Tests of the initialization of the venstar integration."""
+
 from unittest.mock import patch
 
 from homeassistant.components.venstar.const import DOMAIN as VENSTAR_DOMAIN
@@ -13,7 +14,7 @@ from tests.common import MockConfigEntry
 TEST_HOST = "venstartest.localdomain"
 
 
-async def test_setup_entry(hass: HomeAssistant):
+async def test_setup_entry(hass: HomeAssistant) -> None:
     """Validate that setup entry also configure the client."""
     config_entry = MockConfigEntry(
         domain=VENSTAR_DOMAIN,
@@ -53,7 +54,7 @@ async def test_setup_entry(hass: HomeAssistant):
     assert config_entry.state == ConfigEntryState.NOT_LOADED
 
 
-async def test_setup_entry_exception(hass: HomeAssistant):
+async def test_setup_entry_exception(hass: HomeAssistant) -> None:
     """Validate that setup entry also configure the client."""
     config_entry = MockConfigEntry(
         domain=VENSTAR_DOMAIN,

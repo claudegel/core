@@ -1,9 +1,11 @@
 """Support for Abode Security System switches."""
+
 from __future__ import annotations
 
 from typing import Any, cast
 
-from abodepy.devices.switch import CONST, AbodeSwitch as AbodeSW
+from jaraco.abode.devices.switch import Switch as AbodeSW
+from jaraco.abode.helpers import constants as CONST
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -16,8 +18,6 @@ from .const import DOMAIN
 
 DEVICE_TYPES = [CONST.TYPE_SWITCH, CONST.TYPE_VALVE]
 
-ICON = "mdi:robot"
-
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -25,14 +25,16 @@ async def async_setup_entry(
     """Set up Abode switch devices."""
     data: AbodeSystem = hass.data[DOMAIN]
 
-    entities: list[SwitchEntity] = []
+    entities: list[SwitchEntity] = [
+        AbodeSwitch(data, device)
+        for device_type in DEVICE_TYPES
+        for device in data.abode.get_devices(generic_type=device_type)
+    ]
 
-    for device_type in DEVICE_TYPES:
-        for device in data.abode.get_devices(generic_type=device_type):
-            entities.append(AbodeSwitch(data, device))
-
-    for automation in data.abode.get_automations():
-        entities.append(AbodeAutomationSwitch(data, automation))
+    entities.extend(
+        AbodeAutomationSwitch(data, automation)
+        for automation in data.abode.get_automations()
+    )
 
     async_add_entities(entities)
 
@@ -41,6 +43,7 @@ class AbodeSwitch(AbodeDevice, SwitchEntity):
     """Representation of an Abode switch."""
 
     _device: AbodeSW
+    _attr_name = None
 
     def turn_on(self, **kwargs: Any) -> None:
         """Turn on the device."""
@@ -59,7 +62,7 @@ class AbodeSwitch(AbodeDevice, SwitchEntity):
 class AbodeAutomationSwitch(AbodeAutomation, SwitchEntity):
     """A switch implementation for Abode automations."""
 
-    _attr_icon = ICON
+    _attr_translation_key = "automation"
 
     async def async_added_to_hass(self) -> None:
         """Set up trigger automation service."""

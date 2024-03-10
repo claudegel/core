@@ -1,4 +1,5 @@
 """The VLC media player Telnet integration."""
+
 from aiovlc.client import Client
 from aiovlc.exceptions import AuthError, ConnectError
 
@@ -40,7 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     domain_data = hass.data.setdefault(DOMAIN, {})
     domain_data[entry.entry_id] = {DATA_VLC: vlc, DATA_AVAILABLE: available}
 
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 

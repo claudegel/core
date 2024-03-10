@@ -1,4 +1,5 @@
 """Support for Aseko Pool Live binary sensors."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -15,41 +16,32 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import AsekoDataUpdateCoordinator
 from .const import DOMAIN
+from .coordinator import AsekoDataUpdateCoordinator
 from .entity import AsekoEntity
 
 
-@dataclass
-class AsekoBinarySensorDescriptionMixin:
-    """Mixin for required keys."""
+@dataclass(frozen=True, kw_only=True)
+class AsekoBinarySensorEntityDescription(BinarySensorEntityDescription):
+    """Describes an Aseko binary sensor entity."""
 
     value_fn: Callable[[Unit], bool]
-
-
-@dataclass
-class AsekoBinarySensorEntityDescription(
-    BinarySensorEntityDescription, AsekoBinarySensorDescriptionMixin
-):
-    """Describes a Aseko binary sensor entity."""
 
 
 UNIT_BINARY_SENSORS: tuple[AsekoBinarySensorEntityDescription, ...] = (
     AsekoBinarySensorEntityDescription(
         key="water_flow",
-        name="Water Flow",
-        icon="mdi:waves-arrow-right",
+        translation_key="water_flow",
         value_fn=lambda unit: unit.water_flow,
     ),
     AsekoBinarySensorEntityDescription(
         key="has_alarm",
-        name="Alarm",
+        translation_key="alarm",
         value_fn=lambda unit: unit.has_alarm,
         device_class=BinarySensorDeviceClass.SAFETY,
     ),
     AsekoBinarySensorEntityDescription(
         key="has_error",
-        name="Error",
         value_fn=lambda unit: unit.has_error,
         device_class=BinarySensorDeviceClass.PROBLEM,
     ),

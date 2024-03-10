@@ -1,4 +1,5 @@
 """Test fixtures for AEH."""
+
 from dataclasses import dataclass
 from datetime import timedelta
 import logging
@@ -59,7 +60,10 @@ async def mock_entry_fixture(hass, filter_schema, mock_create_batch, mock_send_b
         utcnow() + timedelta(seconds=entry.options[CONF_SEND_INTERVAL]),
     )
     await hass.async_block_till_done()
-    return entry
+
+    yield entry
+
+    await entry.async_unload(hass)
 
 
 # fixtures for init tests
@@ -117,7 +121,7 @@ def mock_from_connection_string_fixture():
         yield from_conn_string
 
 
-@pytest.fixture(name="mock_setup_entry")
+@pytest.fixture
 def mock_setup_entry():
     """Mock the setup entry call, used for config flow tests."""
     with patch(

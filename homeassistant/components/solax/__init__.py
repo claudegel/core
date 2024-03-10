@@ -1,4 +1,5 @@
 """The solax component."""
+
 from solax import real_time_api
 
 from homeassistant.config_entries import ConfigEntry
@@ -25,7 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from err
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = api
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 

@@ -1,4 +1,5 @@
 """Support for exposing Concord232 elements as sensors."""
+
 from __future__ import annotations
 
 import datetime
@@ -133,7 +134,7 @@ class Concord232ZoneSensor(BinarySensorEntity):
         # True means "faulted" or "open" or "abnormal state"
         return bool(self._zone["state"] != "Normal")
 
-    def update(self):
+    def update(self) -> None:
         """Get updated stats from API."""
         last_update = dt_util.utcnow() - self._client.last_zone_update
         _LOGGER.debug("Zone: %s ", self._zone)

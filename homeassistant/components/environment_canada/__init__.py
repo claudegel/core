@@ -1,4 +1,5 @@
 """The Environment Canada (EC) component."""
+
 from datetime import timedelta
 import logging
 import xml.etree.ElementTree as et
@@ -6,12 +7,13 @@ import xml.etree.ElementTree as et
 from env_canada import ECAirQuality, ECRadar, ECWeather, ec_exc
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, Platform
+from homeassistant.const import CONF_LANGUAGE, CONF_LATITUDE, CONF_LONGITUDE, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import CONF_LANGUAGE, CONF_STATION, DOMAIN
+from .const import CONF_STATION, DOMAIN
 
 DEFAULT_RADAR_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_WEATHER_UPDATE_INTERVAL = timedelta(minutes=5)
@@ -71,7 +73,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][config_entry.entry_id] = coordinators
 
-    hass.config_entries.async_setup_platforms(config_entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
 
@@ -87,7 +89,18 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     return unload_ok
 
 
-class ECDataUpdateCoordinator(DataUpdateCoordinator):
+def device_info(config_entry: ConfigEntry) -> DeviceInfo:
+    """Build and return the device info for EC."""
+    return DeviceInfo(
+        entry_type=DeviceEntryType.SERVICE,
+        identifiers={(DOMAIN, config_entry.entry_id)},
+        manufacturer="Environment Canada",
+        name=config_entry.title,
+        configuration_url="https://weather.gc.ca/",
+    )
+
+
+class ECDataUpdateCoordinator(DataUpdateCoordinator):  # pylint: disable=hass-enforce-coordinator-module
     """Class to manage fetching EC data."""
 
     def __init__(self, hass, ec_data, name, update_interval):

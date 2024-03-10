@@ -1,4 +1,5 @@
 """Support for SleepIQ buttons."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -17,14 +18,14 @@ from .coordinator import SleepIQData
 from .entity import SleepIQEntity
 
 
-@dataclass
+@dataclass(frozen=True)
 class SleepIQButtonEntityDescriptionMixin:
     """Describes a SleepIQ Button entity."""
 
     press_action: Callable[[SleepIQBed], Any]
 
 
-@dataclass
+@dataclass(frozen=True)
 class SleepIQButtonEntityDescription(
     ButtonEntityDescription, SleepIQButtonEntityDescriptionMixin
 ):

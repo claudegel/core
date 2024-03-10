@@ -1,4 +1,5 @@
 """Aussie Broadband common helpers for tests."""
+
 from unittest.mock import patch
 
 from homeassistant.components.aussie_broadband.const import (
@@ -12,7 +13,7 @@ from tests.common import MockConfigEntry
 FAKE_SERVICES = [
     {
         "service_id": "12345678",
-        "description": "Fake ABB NBN Service",
+        "description": "Fake ABB NBN Service - AVC123456789",
         "type": "NBN",
         "name": "NBN",
     },

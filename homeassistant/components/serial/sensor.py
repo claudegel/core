@@ -1,4 +1,5 @@
 """Support for reading data from a serial port."""
+
 from __future__ import annotations
 
 import asyncio
@@ -113,6 +114,8 @@ async def async_setup_platform(
 class SerialSensor(SensorEntity):
     """Representation of a Serial sensor."""
 
+    _attr_should_poll = False
+
     def __init__(
         self,
         name,
@@ -141,7 +144,7 @@ class SerialSensor(SensorEntity):
         self._template = value_template
         self._attributes = None
 
-    async def async_added_to_hass(self):
+    async def async_added_to_hass(self) -> None:
         """Handle when an entity is about to be added to Home Assistant."""
         self._serial_loop_task = self.hass.loop.create_task(
             self.serial_read(
@@ -241,11 +244,6 @@ class SerialSensor(SensorEntity):
     def name(self):
         """Return the name of the sensor."""
         return self._name
-
-    @property
-    def should_poll(self):
-        """No polling needed."""
-        return False
 
     @property
     def extra_state_attributes(self):

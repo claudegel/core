@@ -1,4 +1,5 @@
 """TOLO Sauna number controls."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -10,16 +11,15 @@ from tololib.message_info import SettingsInfo
 
 from homeassistant.components.number import NumberEntity, NumberEntityDescription
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import TIME_MINUTES
+from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import ToloSaunaCoordinatorEntity, ToloSaunaUpdateCoordinator
 from .const import DOMAIN, FAN_TIMER_MAX, POWER_TIMER_MAX, SALT_BATH_TIMER_MAX
 
 
-@dataclass
+@dataclass(frozen=True)
 class ToloNumberEntityDescriptionBase:
     """Required values when describing TOLO Number entities."""
 
@@ -27,42 +27,39 @@ class ToloNumberEntityDescriptionBase:
     setter: Callable[[ToloClient, int | None], Any]
 
 
-@dataclass
+@dataclass(frozen=True)
 class ToloNumberEntityDescription(
     NumberEntityDescription, ToloNumberEntityDescriptionBase
 ):
     """Class describing TOLO Number entities."""
 
     entity_category = EntityCategory.CONFIG
-    min_value = 0
-    step = 1
+    native_min_value = 0
+    native_step = 1
 
 
 NUMBERS = (
     ToloNumberEntityDescription(
         key="power_timer",
-        icon="mdi:power-settings",
-        name="Power Timer",
-        unit_of_measurement=TIME_MINUTES,
-        max_value=POWER_TIMER_MAX,
+        translation_key="power_timer",
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        native_max_value=POWER_TIMER_MAX,
         getter=lambda settings: settings.power_timer,
         setter=lambda client, value: client.set_power_timer(value),
     ),
     ToloNumberEntityDescription(
         key="salt_bath_timer",
-        icon="mdi:shaker-outline",
-        name="Salt Bath Timer",
-        unit_of_measurement=TIME_MINUTES,
-        max_value=SALT_BATH_TIMER_MAX,
+        translation_key="salt_bath_timer",
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        native_max_value=SALT_BATH_TIMER_MAX,
         getter=lambda settings: settings.salt_bath_timer,
         setter=lambda client, value: client.set_salt_bath_timer(value),
     ),
     ToloNumberEntityDescription(
         key="fan_timer",
-        icon="mdi:fan-auto",
-        name="Fan Timer",
-        unit_of_measurement=TIME_MINUTES,
-        max_value=FAN_TIMER_MAX,
+        translation_key="fan_timer",
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        native_max_value=FAN_TIMER_MAX,
         getter=lambda settings: settings.fan_timer,
         setter=lambda client, value: client.set_fan_timer(value),
     ),
@@ -98,11 +95,11 @@ class ToloNumberEntity(ToloSaunaCoordinatorEntity, NumberEntity):
         self._attr_unique_id = f"{entry.entry_id}_{entity_description.key}"
 
     @property
-    def value(self) -> float:
+    def native_value(self) -> float:
         """Return the value of this TOLO Number entity."""
         return self.entity_description.getter(self.coordinator.data.settings) or 0
 
-    def set_value(self, value: float) -> None:
+    def set_native_value(self, value: float) -> None:
         """Set the value of this TOLO Number entity."""
         int_value = int(value)
         if int_value == 0:

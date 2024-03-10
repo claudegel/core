@@ -1,4 +1,5 @@
 """Support for departure information for Rhein-Main public transport."""
+
 from __future__ import annotations
 
 import asyncio
@@ -13,7 +14,7 @@ from RMVtransport.rmvtransport import (
 import voluptuous as vol
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
-from homeassistant.const import ATTR_ATTRIBUTION, CONF_NAME, CONF_TIMEOUT, TIME_MINUTES
+from homeassistant.const import CONF_NAME, CONF_TIMEOUT, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import PlatformNotReady
 import homeassistant.helpers.config_validation as cv
@@ -103,7 +104,7 @@ async def async_setup_platform(
         for next_departure in config[CONF_NEXT_DEPARTURE]
     ]
 
-    tasks = [sensor.async_update() for sensor in sensors]
+    tasks = [asyncio.create_task(sensor.async_update()) for sensor in sensors]
     if tasks:
         await asyncio.wait(tasks)
 
@@ -115,6 +116,8 @@ async def async_setup_platform(
 
 class RMVDepartureSensor(SensorEntity):
     """Implementation of an RMV departure sensor."""
+
+    _attr_attribution = ATTRIBUTION
 
     def __init__(
         self,
@@ -170,7 +173,6 @@ class RMVDepartureSensor(SensorEntity):
                 "minutes": self.data.departures[0].get("minutes"),
                 "departure_time": self.data.departures[0].get("departure_time"),
                 "product": self.data.departures[0].get("product"),
-                ATTR_ATTRIBUTION: ATTRIBUTION,
             }
         except IndexError:
             return {}
@@ -183,9 +185,9 @@ class RMVDepartureSensor(SensorEntity):
     @property
     def native_unit_of_measurement(self):
         """Return the unit this state is expressed in."""
-        return TIME_MINUTES
+        return UnitOfTime.MINUTES
 
-    async def async_update(self):
+    async def async_update(self) -> None:
         """Get the latest data and update the state."""
         await self.data.async_update()
 
@@ -266,10 +268,11 @@ class RMVDepartureData:
                 if not dest_found:
                     continue
 
-            elif self._lines and journey["number"] not in self._lines:
-                continue
-
-            elif journey["minutes"] < self._time_offset:
+            elif (
+                self._lines
+                and journey["number"] not in self._lines
+                or journey["minutes"] < self._time_offset
+            ):
                 continue
 
             for attr in ("direction", "departure_time", "product", "minutes"):

@@ -1,10 +1,12 @@
 """Test the Diagnostics integration."""
+
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 
 from homeassistant.components.websocket_api.const import TYPE_RESULT
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import async_get
 from homeassistant.helpers.system_info import async_get_system_info
 from homeassistant.setup import async_setup_component
@@ -12,6 +14,7 @@ from homeassistant.setup import async_setup_component
 from . import _get_diagnostics_for_config_entry, _get_diagnostics_for_device
 
 from tests.common import MockConfigEntry, mock_platform
+from tests.typing import ClientSessionGenerator, WebSocketGenerator
 
 
 @pytest.fixture(autouse=True)
@@ -42,7 +45,9 @@ async def mock_diagnostics_integration(hass):
     assert await async_setup_component(hass, "diagnostics", {})
 
 
-async def test_websocket(hass, hass_ws_client):
+async def test_websocket(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator
+) -> None:
     """Test websocket command."""
     client = await hass_ws_client(hass)
     await client.send_json({"id": 5, "type": "diagnostics/list"})
@@ -74,7 +79,9 @@ async def test_websocket(hass, hass_ws_client):
     }
 
 
-async def test_download_diagnostics(hass, hass_client):
+async def test_download_diagnostics(
+    hass: HomeAssistant, hass_client: ClientSessionGenerator
+) -> None:
     """Test download diagnostics."""
     config_entry = MockConfigEntry(domain="fake_integration")
     config_entry.add_to_hass(hass)
@@ -118,7 +125,9 @@ async def test_download_diagnostics(hass, hass_client):
     }
 
 
-async def test_failure_scenarios(hass, hass_client):
+async def test_failure_scenarios(
+    hass: HomeAssistant, hass_client: ClientSessionGenerator
+) -> None:
     """Test failure scenarios."""
     client = await hass_client()
 

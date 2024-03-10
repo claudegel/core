@@ -1,7 +1,7 @@
 """Support for FleetGO Platform."""
+
 from __future__ import annotations
 
-from collections.abc import Callable
 import logging
 
 import requests
@@ -10,6 +10,7 @@ import voluptuous as vol
 
 from homeassistant.components.device_tracker import (
     PLATFORM_SCHEMA as PARENT_PLATFORM_SCHEMA,
+    SeeCallback,
 )
 from homeassistant.const import (
     CONF_CLIENT_ID,
@@ -39,7 +40,7 @@ PLATFORM_SCHEMA = PARENT_PLATFORM_SCHEMA.extend(
 def setup_scanner(
     hass: HomeAssistant,
     config: ConfigType,
-    see: Callable[..., None],
+    see: SeeCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> bool:
     """Set up the DeviceScanner and check if login is valid."""
@@ -53,7 +54,7 @@ def setup_scanner(
 class FleetGoDeviceScanner:
     """Define a scanner for the FleetGO platform."""
 
-    def __init__(self, config, see):
+    def __init__(self, config, see: SeeCallback) -> None:
         """Initialize FleetGoDeviceScanner."""
         self._include = config.get(CONF_INCLUDE)
         self._see = see
@@ -86,7 +87,6 @@ class FleetGoDeviceScanner:
 
             for device in devices:
                 if not self._include or device.license_plate in self._include:
-
                     if device.active or device.current_address is None:
                         device.get_map_details()
 

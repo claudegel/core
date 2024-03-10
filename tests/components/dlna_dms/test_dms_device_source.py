@@ -1,4 +1,5 @@
 """Test the browse and resolve methods of DmsDeviceSource."""
+
 from __future__ import annotations
 
 from typing import Final, Union
@@ -45,7 +46,7 @@ async def async_resolve_media(
 ) -> DidlPlayMedia:
     """Call media_source.async_resolve_media with the test source's ID."""
     result = await media_source.async_resolve_media(
-        hass, f"media-source://{DOMAIN}/{MOCK_SOURCE_ID}/{media_content_id}"
+        hass, f"media-source://{DOMAIN}/{MOCK_SOURCE_ID}/{media_content_id}", None
     )
     assert isinstance(result, DidlPlayMedia)
     return result
@@ -66,7 +67,7 @@ async def test_catch_request_error_unavailable(
 ) -> None:
     """Test the device is checked for availability before trying requests."""
     # DmsDevice notifies of disconnect via SSDP
-    ssdp_callback = ssdp_scanner_mock.async_register_callback.call_args.args[0]
+    ssdp_callback = ssdp_scanner_mock.async_register_callback.call_args.args[0].target
     await ssdp_callback(
         ssdp.SsdpServiceInfo(
             ssdp_usn=MOCK_DEVICE_USN,

@@ -1,4 +1,5 @@
 """Sensor platform for the PoolSense sensor."""
+
 from __future__ import annotations
 
 from homeassistant.components.sensor import (
@@ -9,68 +10,60 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_EMAIL,
-    ELECTRIC_POTENTIAL_MILLIVOLT,
     PERCENTAGE,
-    TEMP_CELSIUS,
+    UnitOfElectricPotential,
+    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import StateType
 
-from . import PoolSenseEntity
 from .const import DOMAIN
+from .entity import PoolSenseEntity
 
 SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="Chlorine",
-        native_unit_of_measurement=ELECTRIC_POTENTIAL_MILLIVOLT,
-        icon="mdi:pool",
-        name="Chlorine",
+        translation_key="chlorine",
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
     ),
     SensorEntityDescription(
         key="pH",
-        icon="mdi:pool",
-        name="pH",
+        device_class=SensorDeviceClass.PH,
     ),
     SensorEntityDescription(
         key="Battery",
         native_unit_of_measurement=PERCENTAGE,
-        name="Battery",
         device_class=SensorDeviceClass.BATTERY,
     ),
     SensorEntityDescription(
         key="Water Temp",
-        native_unit_of_measurement=TEMP_CELSIUS,
-        icon="mdi:coolant-temperature",
-        name="Temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        translation_key="water_temp",
         device_class=SensorDeviceClass.TEMPERATURE,
     ),
     SensorEntityDescription(
         key="Last Seen",
-        icon="mdi:clock",
-        name="Last Seen",
+        translation_key="last_seen",
         device_class=SensorDeviceClass.TIMESTAMP,
     ),
     SensorEntityDescription(
         key="Chlorine High",
-        native_unit_of_measurement=ELECTRIC_POTENTIAL_MILLIVOLT,
-        icon="mdi:pool",
-        name="Chlorine High",
+        translation_key="chlorine_high",
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
     ),
     SensorEntityDescription(
         key="Chlorine Low",
-        native_unit_of_measurement=ELECTRIC_POTENTIAL_MILLIVOLT,
-        icon="mdi:pool",
-        name="Chlorine Low",
+        translation_key="chlorine_low",
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
     ),
     SensorEntityDescription(
         key="pH High",
-        icon="mdi:pool",
-        name="pH High",
+        translation_key="ph_high",
     ),
     SensorEntityDescription(
         key="pH Low",
-        icon="mdi:pool",
-        name="pH Low",
+        translation_key="ph_low",
     ),
 )
 
@@ -95,6 +88,6 @@ class PoolSenseSensor(PoolSenseEntity, SensorEntity):
     """Sensor representing poolsense data."""
 
     @property
-    def native_value(self):
+    def native_value(self) -> StateType:
         """State of the sensor."""
         return self.coordinator.data[self.entity_description.key]

@@ -1,4 +1,5 @@
 """Sensor for Supervisord process status."""
+
 from __future__ import annotations
 
 import logging
@@ -79,7 +80,7 @@ class SupervisorProcessSensor(SensorEntity):
             ATTR_GROUP: self._info.get("group"),
         }
 
-    def update(self):
+    def update(self) -> None:
         """Update device state."""
         try:
             self._info = self._server.supervisor.getProcessInfo(

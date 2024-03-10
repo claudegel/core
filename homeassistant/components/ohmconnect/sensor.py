@@ -1,4 +1,5 @@
 """Support for OhmConnect."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -51,6 +52,7 @@ class OhmconnectSensor(SensorEntity):
         self._name = name
         self._ohmid = ohmid
         self._data = {}
+        self._attr_unique_id = ohmid
 
     @property
     def name(self):
@@ -70,7 +72,7 @@ class OhmconnectSensor(SensorEntity):
         return {"Address": self._data.get("address"), "ID": self._ohmid}
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    def update(self):
+    def update(self) -> None:
         """Get the latest data from OhmConnect."""
         try:
             url = f"https://login.ohmconnect.com/verify-ohm-hour/{self._ohmid}"

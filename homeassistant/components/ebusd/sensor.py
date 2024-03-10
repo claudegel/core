@@ -1,4 +1,5 @@
 """Support for Ebusd sensors."""
+
 from __future__ import annotations
 
 import datetime
@@ -111,7 +112,7 @@ class EbusdSensor(SensorEntity):
         return self._unit_of_measurement
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    def update(self):
+    def update(self) -> None:
         """Fetch new state data for the sensor."""
         try:
             self.data.update(self._name, self._type)

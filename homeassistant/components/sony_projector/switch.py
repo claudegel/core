@@ -1,7 +1,9 @@
 """Support for Sony projectors via SDCP network control."""
+
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import pysdcp
 import voluptuous as vol
@@ -78,7 +80,7 @@ class SonyProjector(SwitchEntity):
         """Return state attributes."""
         return self._attributes
 
-    def update(self):
+    def update(self) -> None:
         """Get the latest state from the projector."""
         try:
             self._state = self._sdcp.get_power()
@@ -87,7 +89,7 @@ class SonyProjector(SwitchEntity):
             _LOGGER.error("Projector connection refused")
             self._available = False
 
-    def turn_on(self, **kwargs):
+    def turn_on(self, **kwargs: Any) -> None:
         """Turn the projector on."""
         _LOGGER.debug("Powering on projector '%s'", self.name)
         if self._sdcp.set_power(True):
@@ -96,7 +98,7 @@ class SonyProjector(SwitchEntity):
         else:
             _LOGGER.error("Power on command was not successful")
 
-    def turn_off(self, **kwargs):
+    def turn_off(self, **kwargs: Any) -> None:
         """Turn the projector off."""
         _LOGGER.debug("Powering off projector '%s'", self.name)
         if self._sdcp.set_power(False):

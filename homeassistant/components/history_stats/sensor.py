@@ -1,8 +1,10 @@
 """Component to make instant statistics about your history."""
+
 from __future__ import annotations
 
 from abc import abstractmethod
 import datetime
+from typing import Any, TypeVar
 
 import voluptuous as vol
 
@@ -17,10 +19,12 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_STATE,
     CONF_TYPE,
+    CONF_UNIQUE_ID,
     PERCENTAGE,
-    TIME_HOURS,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import PlatformNotReady
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.reload import async_setup_reload_service
@@ -45,14 +49,16 @@ CONF_TYPE_KEYS = [CONF_TYPE_TIME, CONF_TYPE_RATIO, CONF_TYPE_COUNT]
 
 DEFAULT_NAME = "unnamed statistics"
 UNITS: dict[str, str] = {
-    CONF_TYPE_TIME: TIME_HOURS,
+    CONF_TYPE_TIME: UnitOfTime.HOURS,
     CONF_TYPE_RATIO: PERCENTAGE,
     CONF_TYPE_COUNT: "",
 }
 ICON = "mdi:chart-line"
 
+_T = TypeVar("_T", bound=dict[str, Any])
 
-def exactly_two_period_keys(conf):
+
+def exactly_two_period_keys(conf: _T) -> _T:
     """Ensure exactly 2 of CONF_PERIOD_KEYS are provided."""
     if sum(param in conf for param in CONF_PERIOD_KEYS) != 2:
         raise vol.Invalid(
@@ -71,6 +77,7 @@ PLATFORM_SCHEMA = vol.All(
             vol.Optional(CONF_DURATION): cv.time_period,
             vol.Optional(CONF_TYPE, default=CONF_TYPE_TIME): vol.In(CONF_TYPE_KEYS),
             vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+            vol.Optional(CONF_UNIQUE_ID): cv.string,
         }
     ),
     exactly_two_period_keys,
@@ -94,6 +101,7 @@ async def async_setup_platform(
     duration: datetime.timedelta | None = config.get(CONF_DURATION)
     sensor_type: str = config[CONF_TYPE]
     name: str = config[CONF_NAME]
+    unique_id: str | None = config.get(CONF_UNIQUE_ID)
 
     for template in (start, end):
         if template is not None:
@@ -101,7 +109,10 @@ async def async_setup_platform(
 
     history_stats = HistoryStats(hass, entity_id, entity_states, start, end, duration)
     coordinator = HistoryStatsUpdateCoordinator(hass, history_stats, name)
-    async_add_entities([HistoryStatsSensor(coordinator, sensor_type, name)])
+    await coordinator.async_refresh()
+    if not coordinator.last_update_success:
+        raise PlatformNotReady from coordinator.last_exception
+    async_add_entities([HistoryStatsSensor(coordinator, sensor_type, name, unique_id)])
 
 
 class HistoryStatsSensorBase(
@@ -139,7 +150,6 @@ class HistoryStatsSensorBase(
 class HistoryStatsSensor(HistoryStatsSensorBase):
     """A HistoryStats sensor."""
 
-    _attr_device_class = SensorDeviceClass.DURATION
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(
@@ -147,23 +157,32 @@ class HistoryStatsSensor(HistoryStatsSensorBase):
         coordinator: HistoryStatsUpdateCoordinator,
         sensor_type: str,
         name: str,
+        unique_id: str | None,
     ) -> None:
         """Initialize the HistoryStats sensor."""
         super().__init__(coordinator, name)
         self._attr_native_unit_of_measurement = UNITS[sensor_type]
         self._type = sensor_type
+        self._attr_unique_id = unique_id
+        self._process_update()
+        if self._type == CONF_TYPE_TIME:
+            self._attr_device_class = SensorDeviceClass.DURATION
+            self._attr_suggested_display_precision = 2
 
     @callback
     def _process_update(self) -> None:
         """Process an update from the coordinator."""
         state = self.coordinator.data
-        if state is None or state.hours_matched is None:
+        if state is None or state.seconds_matched is None:
             self._attr_native_value = None
             return
 
         if self._type == CONF_TYPE_TIME:
-            self._attr_native_value = round(state.hours_matched, 2)
+            value = state.seconds_matched / 3600
+            if self._attr_unique_id is None:
+                value = round(value, 2)
+            self._attr_native_value = value
         elif self._type == CONF_TYPE_RATIO:
-            self._attr_native_value = pretty_ratio(state.hours_matched, state.period)
+            self._attr_native_value = pretty_ratio(state.seconds_matched, state.period)
         elif self._type == CONF_TYPE_COUNT:
-            self._attr_native_value = state.changes_to_match_state
+            self._attr_native_value = state.match_count

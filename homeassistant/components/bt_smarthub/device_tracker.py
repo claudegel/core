@@ -1,4 +1,5 @@
 """Support for BT Smart Hub (Sometimes referred to as BT Home Hub 6)."""
+
 from __future__ import annotations
 
 from collections import namedtuple
@@ -30,7 +31,7 @@ PLATFORM_SCHEMA = PARENT_PLATFORM_SCHEMA.extend(
 )
 
 
-def get_scanner(hass: HomeAssistant, config: ConfigType) -> DeviceScanner | None:
+def get_scanner(hass: HomeAssistant, config: ConfigType) -> BTSmartHubScanner | None:
     """Return a BT Smart Hub scanner if successful."""
     info = config[DOMAIN]
     smarthub_client = BTSmartHub(
@@ -54,7 +55,7 @@ _Device = namedtuple("_Device", ["ip_address", "mac", "host", "status", "name"])
 
 
 class BTSmartHubScanner(DeviceScanner):
-    """This class queries a BT Smart Hub."""
+    """Class which queries a BT Smart Hub."""
 
     def __init__(self, smarthub_client):
         """Initialise the scanner."""

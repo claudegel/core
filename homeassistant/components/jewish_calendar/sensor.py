@@ -1,4 +1,5 @@
 """Platform to retrieve Jewish calendar information for Home Assistant."""
+
 from __future__ import annotations
 
 from datetime import date as Date
@@ -64,6 +65,11 @@ TIME_SENSORS = (
         icon="mdi:calendar-clock",
     ),
     SensorEntityDescription(
+        key="sunrise",
+        name="Hanetz Hachama",
+        icon="mdi:calendar-clock",
+    ),
+    SensorEntityDescription(
         key="gra_end_shma",
         name='Latest time for Shma Gr"a',
         icon="mdi:calendar-clock",
@@ -81,6 +87,11 @@ TIME_SENSORS = (
     SensorEntityDescription(
         key="mga_end_tfila",
         name='Latest time for Tefilla MG"A',
+        icon="mdi:calendar-clock",
+    ),
+    SensorEntityDescription(
+        key="midday",
+        name="Chatzot Hayom",
         icon="mdi:calendar-clock",
     ),
     SensorEntityDescription(
@@ -257,7 +268,7 @@ class JewishCalendarSensor(SensorEntity):
 
 
 class JewishCalendarTimeSensor(JewishCalendarSensor):
-    """Implement attrbutes for sensors returning times."""
+    """Implement attributes for sensors returning times."""
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
